@@ -499,6 +499,19 @@
             .games-grid {
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             }
+            
+            .awardshii-btn {
+            display: inline-block;
+            background-color: #880808;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
         }
     </style>
 </head>
@@ -537,13 +550,28 @@
     <section class="hero">
       <div class="container">
         <h3 style="font-family: Comic Sans MS; color:red">
-			🔕No updates happening soon or have happened recently!🔕
+			<b>🔔 WE ARE HAPPY TO ANNOUNCE WE ARE BRINGING BACK SFC3/SFC4 as SFC5 WITH REVAMPS AND NEW GAMES! :D🔔</b>
 		</h3>
 
     <!--Notification copy emojis: 🔔 (notification) 🔕No updates happening soon or have happened recently!🔕(no noitfication)-->
     
   </div>
 </section>
+<!-- 
+GAME CARD INSTRUCTIONS:
+
+- .game-card : main container for a game
+- .game-image : div for the game's image, set via background-image
+- .game-info : container for the title and play button
+- .game-title : the name of the game
+- .awardshii-btn : optional "New!" badge (to add later)
+- .play-btn : the "Play Now" button
+
+TO ADD A "NEW!" BADGE LATER:
+1. Inside the .game-info flex container, add <h3 class="awardshii-btn">New! ✨</h3>
+2. Make the container `display: flex; align-items: center; justify-content: space-between;`
+3. Badge will automatically go to the far right
+-->
 
 
 
@@ -553,14 +581,48 @@
             <h1 class="section-title">Games</h1>
             
             <div class="games-grid">
-                <!-- Game 1 -->
+                
+                                <!-- Game 14 -->
                 <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.nPuB55Mp95w18r3p7rSOjgHaD4?rs=1&pid=ImgDetMain');"></div>
+                <div class="game-image" style="background-image: url('https://wallpaper.dog/large/815735.jpg');"></div>
+                  <div class="game-info">
+                      <div style="display: flex; align-items: center;">
+                        <h3 class="game-title">Minecraft!</h3>
+                      </div>
+                      <a href="https://schoolflashcards5.github.io/minecraft" class="play-btn">Play Now</a>
+                  </div>
+                </div>
+
+
+                
+                  <!-- Game 5 -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://geometrydash.io/data/image/game/csgoclicker.PNG');"></div>
                     <div class="game-info">
-                        <h3 class="game-title">Tiny Fishing!</h3>
-                        <a href="https://schoolflashcards5.github.io/tiny-fishing" class="play-btn">Play Now</a>
+                        <h3 class="game-title">CSGO Clicker!</h3>
+                        <a href="https://schoolflashcards3.github.io/CSGOClicker/" class="play-btn">Play Now</a>
                     </div>
                 </div>
+                
+                
+                <!-- Game 20 -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://thegadgetlite.com/wp-content/uploads/2023/02/retro-bowl-1024x512.jpg');"></div>
+                    <div class="game-info">
+                        <h3 class="game-title">Retro Bowl!</h3>
+                        <a href="https://schoolflashcards5.github.io/retro-bowl-unblocked" class="play-btn">Play Now</a>
+                    </div>
+                </div>
+                
+                <!-- Game 13 -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.b5-KggaPRTioUNh2mk2mEgHaEK?rs=1&pid=ImgDetMain');"></div>
+                    <div class="game-info">
+                        <h3 class="game-title">Subway Surfers!</h3>
+                        <a href="https://schoolflashcards5.github.io/subway" class="play-btn">Play Now</a>
+                    </div>
+                </div>
+                
                 
                 <!-- Game 2 -->
                 <div class="game-card">
@@ -580,21 +642,13 @@
                     </div>
                 </div>
                 
+                
                 <!-- Game 4 -->
                 <div class="game-card">
                     <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.sNzuFjc75su2lU5Pb5ZJvgHaEK?rs=1&pid=ImgDetMain');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Cookie Clicker!</h3>
                         <a href="https://schoolflashcards3.github.io/cookieNEW/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 5 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://geometrydash.io/data/image/game/csgoclicker.PNG');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">CSGO Clicker!</h3>
-                        <a href="https://schoolflashcards3.github.io/CSGOClicker/" class="play-btn">Play Now</a>
                     </div>
                 </div>
                 
@@ -625,6 +679,15 @@
                     </div>
                 </div>
                 
+                <!-- Game 1 -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.nPuB55Mp95w18r3p7rSOjgHaD4?rs=1&pid=ImgDetMain');"></div>
+                    <div class="game-info">
+                        <h3 class="game-title">Tiny Fishing!</h3>
+                        <a href="https://schoolflashcards5.github.io/tiny-fishing" class="play-btn">Play Now</a>
+                    </div>
+                </div>
+                
                 <!-- Game 9 -->
                 <div class="game-card">
                     <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.FtKs5H6IkONNnA5qoyQNqwHaEK?rs=1&pid=ImgDetMain');"></div>
@@ -652,30 +715,12 @@
                     </div>
                 </div>
                 
-                <!-- Game 13 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.b5-KggaPRTioUNh2mk2mEgHaEK?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Subway Surfers!</h3>
-                        <a href="https://schoolflashcards5.github.io/subway" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 14 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://wallpaper.dog/large/815735.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Minecraft!</h3>
-                        <a href="https://ekfun.github.io/eagtek/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
                 <!-- Game 15 -->
                 <div class="game-card">
                     <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.ZXvaWHcoqFPZcGo78fK9SQHaDk?rs=1&pid=ImgDetMain');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Crossy Road!</h3>
-                        <a href="https://ekfun.github.io/crossy-road/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/crossy-road" class="play-btn">Play Now</a>
                     </div>
                 </div>
                 
@@ -684,7 +729,7 @@
                     <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.ollyg9Yd7zX9DNtnkzsc-gHaEJ?rs=1&pid=ImgDetMain');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Basketball Legends!</h3>
-                        <a href="https://ekfun.github.io/basketball-legends/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/basketball-legends" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -693,7 +738,7 @@
                     <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.raV370_mlwudwsGzK28T0wHaEB?rs=1&pid=ImgDetMain');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Cut the Rope!</h3>
-                        <a href="https://ekfun.github.io/cut-the-rope/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/cut-the-rope" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -702,16 +747,7 @@
                     <div class="game-image" style="background-image: url('https://www.metacritic.com/a/img/catalog/provider/6/12/6-1-635169-52.jpg');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Touchdowners!</h3>
-                        <a href="https://ekfun.github.io/touchdowners/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!-- Game 20 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://thegadgetlite.com/wp-content/uploads/2023/02/retro-bowl-1024x512.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Retro Bowl!</h3>
-                        <a href="https://ekfun.github.io/retro-bowl-unblocked/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/touchdowners" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -720,7 +756,7 @@
                     <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsjzNG5lORTCkfqc_yn7CEhCQP5aRZP9_OOA&s');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Truck Loader 4!</h3>
-                        <a href="https://ekfun.github.io/truck-loader-4/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/truck-loader-4/" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -729,7 +765,7 @@
                     <div class="game-image" style="background-image: url('https://is1-ssl.mzstatic.com/image/thumb/Purple123/v4/7d/a4/6a/7da46af9-4953-70c6-6f3c-25444de561c9/pr_source.png/643x0w.jpg');"></div>
                     <div class="game-info">
                         <h3 class="game-title">GunSpin!</h3>
-                        <a href="https://ekfun.github.io/gunspin/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/gunspin/" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -738,7 +774,7 @@
                     <div class="game-image" style="background-image: url('https://www.coolmathgames.com/sites/default/files/CandyJump_OG-logo.jpg');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Candy Jump!</h3>
-                        <a href="https://ekfun.github.io/candy-jump/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/candy-jump/" class="play-btn">Play Now</a>
                     </div>
                 </div>
 
@@ -747,7 +783,7 @@
                     <div class="game-image" style="background-image: url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2673990/header.jpg?t=1723312296');"></div>
                     <div class="game-info">
                         <h3 class="game-title">Animal Arena!</h3>
-                        <a href="https://ekfun.github.io/animal-arena/" class="play-btn">Play Now</a>
+                        <a href="https://schoolflashcards5.github.io/animal-arena/" class="play-btn">Play Now</a>
                     </div>
                 </div>
             	</section>
@@ -768,7 +804,7 @@
 <footer>
     <div class="container">
         <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <p class="copyright">© 2026 SchoolFlashCards3. Jaysoninthesubway and EKFun are affiliates of SchoolFlashCards3.™</p>
+            <p class="copyright">© 2026 SchoolFlashCards5. Jaysoninthesubway and EKFun are affiliates of SchoolFlashCard5.™</p>
             <button id="cycleBrandBtn" style="background: var(--button); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
                 Enable Disguise Mode
             </button>
@@ -784,7 +820,7 @@
             favicon: "chromelogo.png" // Default favicon
         },
         {
-            title: "SchoolFlashCards3 - Unblocked Games", 
+            title: "SchoolFlashCards5 - Unblocked Games", 
             favicon: "logo.png" // Alternate favicon 1
         }
     ];
