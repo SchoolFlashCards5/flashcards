@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Suggestions - SFC Unblocked Games</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        .thank-you {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: #d5f5e3;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Suggest a Game</h1>
+      <h2>Im gonna keep it short, be reasonable. Request existing games, we
+        aren't spending months and years making a new game.</h2>
+      <form id="suggestionForm" action="https://formspree.io/f/xgvkgkyl"
+        method="POST">
+        <div class="form-group">
+          <label for="name">Your Name (Optional):</label>
+          <input type="text" id="name" name="name">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Your Email:</label>
+          <input type="text" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="game-name">Game Name:</label>
+          <input type="text" id="game-name" name="game-name" required>
+        </div>
+
+        <!-- Formspree hidden fields (optional) -->
+        <input type="hidden" name="_subject" value="New Game Suggestion">
+        <input type="hidden" name="_next"
+          value="https://yourwebsite.com/thank-you.html">
+
+        <button type="submit">Submit</button>
+      </form>
+
+      <div class="thank-you" id="thankYou">
+        <h3>Thank You!</h3>
+        <p>Your game suggestion has been received. We will review and email you
+          about it later.</p>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById('suggestionForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+    
+      fetch(this.action, {
+          method: 'POST',
+          body: new FormData(this),
+          headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = 'thanks'; // redirect here
+        } else {
+            throw new Error('Form submission failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('There was a problem submitting your suggestion. Please try again.');
+    });
+});
+    </script>
+  </body>
+</html>
