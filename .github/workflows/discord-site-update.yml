@@ -1,4 +1,4 @@
-name: Discord Site Update Notifier
+name: Game Change Webhook
 
 on:
   push:
@@ -15,62 +15,76 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Send Discord webhook
+      - name: Detect added/removed games and notify Discord
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          COMMITTER: ${{ github.actor }}
         run: |
           python3 - <<'PY'
           import os
-          import subprocess
+          import re
           import json
+          import subprocess
           import urllib.request
           import urllib.error
+          from collections import Counter
 
           webhook_url = os.environ["WEBHOOK_URL"]
           before_sha = os.environ["BEFORE_SHA"]
           after_sha = os.environ["AFTER_SHA"]
-          repo = os.environ["REPO"]
-          committer = os.environ["COMMITTER"]
 
-          def run(cmd):
-              return subprocess.check_output(cmd, text=True).strip()
+          file_path = "games.html"
 
-          try:
-              commits_raw = run(["git", "log", "--pretty=format:%h - %s", f"{before_sha}..{after_sha}"])
-          except subprocess.CalledProcessError:
-              commits_raw = ""
+          def read_file_at_sha(sha: str, path: str) -> str:
+              if not sha or sha == "0000000000000000000000000000000000000000":
+                  return ""
+              try:
+                  return subprocess.check_output(
+                      ["git", "show", f"{sha}:{path}"],
+                      text=True,
+                      stderr=subprocess.DEVNULL
+                  )
+              except subprocess.CalledProcessError:
+                  return ""
 
-          try:
-              changed_files_raw = run(["git", "diff", "--name-status", f"{before_sha}..{after_sha}"])
-          except subprocess.CalledProcessError:
-              changed_files_raw = ""
+          before_text = read_file_at_sha(before_sha, file_path)
+          after_text = read_file_at_sha(after_sha, file_path)
 
-          try:
-              stat = run(["git", "diff", "--stat", f"{before_sha}..{after_sha}"])
-          except subprocess.CalledProcessError:
-              stat = ""
-
-          commits = [c for c in commits_raw.splitlines() if c.strip()]
-          changed_files = [f for f in changed_files_raw.splitlines() if f.strip()]
-
-          commit_block = "\n".join(f"- {c}" for c in commits[:10]) if commits else "- No commit details found"
-          file_block = "\n".join(f"- {f}" for f in changed_files[:20]) if changed_files else "- No file changes found"
-
-          content = (
-              f"**Site updated in `{repo}`**\n"
-              f"**Pushed by:** {committer}\n\n"
-              f"**Changes pushed:**\n"
-              f"```text\n{stat[:1800] if stat else 'No diff summary available'}\n```\n"
-              f"**Commits:**\n{commit_block}\n\n"
-              f"**Files changed:**\n{file_block}"
+          title_re = re.compile(
+              r'<div class="game-card">.*?<h3 class="game-title">(.*?)</h3>',
+              re.S
           )
 
-          payload = json.dumps({"content": content}).encode("utf-8")
+          before_titles = Counter(title_re.findall(before_text))
+          after_titles = Counter(title_re.findall(after_text))
 
+          added = []
+          removed = []
+
+          for title, count in after_titles.items():
+              delta = count - before_titles.get(title, 0)
+              if delta > 0:
+                  added.extend([title] * delta)
+
+          for title, count in before_titles.items():
+              delta = count - after_titles.get(title, 0)
+              if delta > 0:
+                  removed.extend([title] * delta)
+
+          messages = []
+          for title in added:
+              messages.append(f'A game "{title}" has been added.')
+          for title in removed:
+              messages.append(f'A game "{title}" has been removed.')
+
+          if not messages:
+              print("No game-card changes detected.")
+              raise SystemExit(0)
+
+          content = "\n".join(messages)
+
+          payload = json.dumps({"content": content}).encode("utf-8")
           req = urllib.request.Request(
               webhook_url,
               data=payload,
