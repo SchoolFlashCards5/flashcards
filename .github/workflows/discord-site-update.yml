@@ -1,0 +1,78 @@
+name: Discord Site Update Notifier
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Send Discord webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          COMMITTER: ${{ github.actor }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+          import json
+          import urllib.request
+
+          webhook_url = os.environ["WEBHOOK_URL"]
+          before_sha = os.environ["BEFORE_SHA"]
+          after_sha = os.environ["AFTER_SHA"]
+          repo = os.environ["REPO"]
+          committer = os.environ["COMMITTER"]
+
+          def run(cmd):
+              return subprocess.check_output(cmd, text=True).strip()
+
+          # Commit info
+          commits = run([
+              "git", "log", "--pretty=format:%h - %s", f"{before_sha}..{after_sha}"
+          ]).splitlines()
+
+          # Changed files
+          changed_files = run([
+              "git", "diff", "--name-status", f"{before_sha}..{after_sha}"
+          ]).splitlines()
+
+          # Diff summary
+          stat = run([
+              "git", "diff", "--stat", f"{before_sha}..{after_sha}"
+          ])
+
+          commit_block = "\n".join(f"- {c}" for c in commits[:10]) if commits and commits[0] else "- No commit details found"
+          file_block = "\n".join(f"- {f}" for f in changed_files[:20]) if changed_files and changed_files[0] else "- No file changes found"
+
+          content = (
+              f"**Site updated in `{repo}`**\n"
+              f"**Pushed by:** {committer}\n\n"
+              f"**Changes pushed:**\n"
+              f"```text\n{stat[:1800] if stat else 'No diff summary available'}\n```\n"
+              f"**Commits:**\n{commit_block}\n\n"
+              f"**Files changed:**\n{file_block}"
+          )
+
+          payload = json.dumps({"content": content}).encode("utf-8")
+          req = urllib.request.Request(
+              webhook_url,
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          with urllib.request.urlopen(req) as response:
+              print(response.read().decode("utf-8"))
+          PY
