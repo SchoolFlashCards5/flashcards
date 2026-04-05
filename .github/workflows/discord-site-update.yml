@@ -20,6 +20,8 @@ jobs:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          COMMITTER: ${{ github.actor }}
         run: |
           python3 - <<'PY'
           import os
@@ -33,6 +35,8 @@ jobs:
           webhook_url = os.environ["WEBHOOK_URL"]
           before_sha = os.environ["BEFORE_SHA"]
           after_sha = os.environ["AFTER_SHA"]
+          repo = os.environ["REPO"]
+          committer = os.environ["COMMITTER"]
 
           file_path = "games.html"
 
@@ -82,9 +86,18 @@ jobs:
               print("No game-card changes detected.")
               raise SystemExit(0)
 
-          content = "\n".join(messages)
+          change_text = "\n".join(messages)
+
+          content = (
+              f"**Site updated in `{repo}`**\n"
+              f"**Pushed by:** {committer}\n\n"
+              f"**Changes pushed:**\n"
+              f"```text\n{change_text}\n```\n"
+              f"@here"
+          )
 
           payload = json.dumps({"content": content}).encode("utf-8")
+
           req = urllib.request.Request(
               webhook_url,
               data=payload,
