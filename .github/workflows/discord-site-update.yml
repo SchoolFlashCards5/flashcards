@@ -28,6 +28,7 @@ jobs:
           import subprocess
           import json
           import urllib.request
+          import urllib.error
 
           webhook_url = os.environ["WEBHOOK_URL"]
           before_sha = os.environ["BEFORE_SHA"]
@@ -38,23 +39,26 @@ jobs:
           def run(cmd):
               return subprocess.check_output(cmd, text=True).strip()
 
-          # Commit info
-          commits = run([
-              "git", "log", "--pretty=format:%h - %s", f"{before_sha}..{after_sha}"
-          ]).splitlines()
+          try:
+              commits_raw = run(["git", "log", "--pretty=format:%h - %s", f"{before_sha}..{after_sha}"])
+          except subprocess.CalledProcessError:
+              commits_raw = ""
 
-          # Changed files
-          changed_files = run([
-              "git", "diff", "--name-status", f"{before_sha}..{after_sha}"
-          ]).splitlines()
+          try:
+              changed_files_raw = run(["git", "diff", "--name-status", f"{before_sha}..{after_sha}"])
+          except subprocess.CalledProcessError:
+              changed_files_raw = ""
 
-          # Diff summary
-          stat = run([
-              "git", "diff", "--stat", f"{before_sha}..{after_sha}"
-          ])
+          try:
+              stat = run(["git", "diff", "--stat", f"{before_sha}..{after_sha}"])
+          except subprocess.CalledProcessError:
+              stat = ""
 
-          commit_block = "\n".join(f"- {c}" for c in commits[:10]) if commits and commits[0] else "- No commit details found"
-          file_block = "\n".join(f"- {f}" for f in changed_files[:20]) if changed_files and changed_files[0] else "- No file changes found"
+          commits = [c for c in commits_raw.splitlines() if c.strip()]
+          changed_files = [f for f in changed_files_raw.splitlines() if f.strip()]
+
+          commit_block = "\n".join(f"- {c}" for c in commits[:10]) if commits else "- No commit details found"
+          file_block = "\n".join(f"- {f}" for f in changed_files[:20]) if changed_files else "- No file changes found"
 
           content = (
               f"**Site updated in `{repo}`**\n"
@@ -66,13 +70,21 @@ jobs:
           )
 
           payload = json.dumps({"content": content}).encode("utf-8")
+
           req = urllib.request.Request(
               webhook_url,
               data=payload,
-              headers={"Content-Type": "application/json"},
+              headers={
+                  "Content-Type": "application/json",
+                  "User-Agent": "Mozilla/5.0"
+              },
               method="POST",
           )
 
-          with urllib.request.urlopen(req) as response:
-              print(response.read().decode("utf-8"))
+          try:
+              with urllib.request.urlopen(req) as response:
+                  print(response.read().decode("utf-8"))
+          except urllib.error.HTTPError as e:
+              print(f"HTTP {e.code}: {e.read().decode('utf-8', 'ignore')}")
+              raise
           PY
