@@ -1,1 +1,146 @@
 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Suggestions - SFC Unblocked Games</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        .thank-you {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background-color: #d5f5e3;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+  </head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PJDCVHZFS3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-PJDCVHZFS3');
+</script>
+
+  
+  <body>
+    <div class="container">
+      <h1>What is you favorite game?</h1>
+      <h2>We are doing this to recive feedback and improve the website.</h2>
+      <form id="suggestionForm" action="https://formspree.io/f/mbdqyzpd"
+        method="POST">
+        <div class="form-group">
+          <label for="name">Your Name (Optional):</label>
+          <input type="text" id="name" name="name">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Your Email:</label>
+          <input type="text" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="game">Game:</label>
+             <select name="game" required>
+      <option value="AnimalArena">Animal Arena!</option>
+      <option value="CandyJump">Candy Jump!</option>
+      <option value="GunSpin">GunSpin!</option>
+      <option value="TruckLoader">Truck Loader 4!</option>
+      <option value="Touchdowners">Touchdowners!</option>
+      <option value="CutTheRope">Cut the Rope!</option>
+      <option value="BasketballLegends">Basketball Legends!</option>
+      <option value="CrossyRoad">Crossy Road!</option>
+      <option value="AxisFootballLeague">Axis Football League!</option>
+   </select>
+        </div>
+
+        <!-- Formspree hidden fields (optional) -->
+        <input type="hidden" name="_subject" value="New Game Suggestion">
+        <input type="hidden" name="_next"
+          value="https://yourwebsite.com/thank-you.html">
+
+        <button type="submit">Submit</button>
+      </form>
+
+      <div class="thank-you" id="thankYou">
+        <h3>Thank You!</h3>
+        <p>Your opinion has been received. We will review and email you
+          about it later.</p>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById('suggestionForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+    
+      fetch(this.action, {
+          method: 'POST',
+          body: new FormData(this),
+          headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = 'thanks'; // redirect here
+        } else {
+            throw new Error('Form submission failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('There was a problem submitting your suggestion. Please try again.');
+    });
+});
+    </script>
+  </body>
+</html>
