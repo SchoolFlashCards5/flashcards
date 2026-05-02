@@ -346,7 +346,20 @@
 
         .awardshii-btn {
             display: inline-block;
-            background-color: #880808;
+            background-color: #18bf3a;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .hotgames-btn {
+            display: inline-block;
+            background-color: #be0000;
             color: white;
             padding: 8px 15px;
             border-radius: 5px;
@@ -468,6 +481,17 @@ TO ADD A "NEW!" BADGE LATER:
 
                 <!--Game 44-->
 				<div class="game-card">
+                <div class="game-image" style="background-image: url('https://tse2.mm.bing.net/th/id/OIP.pEu5r8OQgSMaKKkvK5yV6AHaDn?r=0&rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
+                  <div class="game-info">
+                      <div style="display: flex; align-items: center; justify-content: space-between;">
+                      <h3 class="game-title">Jetpack Joyride!</h3><h3 class="awardshii-btn">New! ✨</h3>
+                      </div>
+                      <a href="https://schoolflashcards5.github.io/jetpack-joyride" class="play-btn">Play Now</a>
+                  </div>
+                </div>
+
+                <!--Game 44-->
+				<div class="game-card">
                 <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTriRa08LT5_44xw-Rqo3_BpkSEPS47B0_B-A&s');"></div>
                   <div class="game-info">
                       <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -570,7 +594,7 @@ TO ADD A "NEW!" BADGE LATER:
                 <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeXeJFJB24bPdjHgRUCyIaavYqeB9oe9Rsgw&s');"></div>
                   <div class="game-info">
                       <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Doom 1+2!</h3> <h3 class="awardshii-btn">Hot! 🔥</h3>
+                      <h3 class="game-title">Doom 1+2!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
                       </div>
                       <a href="https://schoolflashcards5.github.io/webDOOM/public" class="play-btn">Play Now</a>
                   </div>
@@ -581,7 +605,7 @@ TO ADD A "NEW!" BADGE LATER:
                 <div class="game-image" style="background-image: url('https://tse1.mm.bing.net/th/id/OIP.e-rHpfrNDgjrb5WCJtmgnAHaES?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
                   <div class="game-info">
                       <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Drift Boss!</h3> <h3 class="awardshii-btn">Hot! 🔥</h3>
+                      <h3 class="game-title">Drift Boss!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
                       </div>
                       <a href="https://schoolflashcards5.github.io/drift-boss/" class="play-btn">Play Now</a>
                   </div>
@@ -594,7 +618,7 @@ TO ADD A "NEW!" BADGE LATER:
                     <div class="game-image" style="background-image: url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2673990/header.jpg?t=1723312296');"></div>
                     <div class="game-info">
 						<div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">Animal Arena!</h3> <h3 class="awardshii-btn">Hot! 🔥</h3>
+                        <h3 class="game-title">Animal Arena!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
 						</div>
                         <a href="https://schoolflashcards5.github.io/animal-arena/" class="play-btn">Play Now</a>
                     </div>
@@ -905,6 +929,9 @@ TO ADD A "NEW!" BADGE LATER:
             <p class="copyright">© 2026 SchoolFlashCards5. EKFun and MonkeyMonkeyHappy are affiliates of SchoolFlashCard5.™</p>
             <button id="cycleBrandBtn" style="background: var(--button); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
                 Enable Disguise Mode
+            </button>
+            <button onclick="window.location.href='info';" style="background: var(--button); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
+                Info about sfc
             </button>
         </div>
     </div>

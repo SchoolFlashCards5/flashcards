@@ -1,0 +1,154 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolFlashCards5 - Info</title>
+    <link rel="shortcut icon" href="logo.png" />
+
+    <style>
+        :root {
+            --primary: #4ECDC4;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #292F36;
+            --light: #F7FFF7;
+            --button: #FF6B6B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        nav ul li a:hover {
+            color: var(--accent);
+        }
+
+        /* CENTERING MAGIC */
+        .infostuff {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding-top: 60px;
+    flex: 1;
+}
+
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .copyright {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .play-btn {
+            display: inline-block;
+            background-color: var(--button);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="games" class="logo">School<span>Flash</span>Cards</a>
+
+                <nav>
+                    <ul>
+                        <li><a href="https://discord.gg/GnVUkcsfMw">Discord Server</a></li>
+                        <li><a href="https://www.youtube.com/@SFC3GH">Youtube Channel</a></li>
+                        <li><a href="https://www.tiktok.com/@schoolflashcards3_gh">TikTok</a></li>
+                        <li><a href="wr">WR</a></li>
+                        <li><a href="games">All Games</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="infostuff">
+        <h1>Version 5.2.1</h1>
+        <h3>Last change: Fix gladi, add joyride.</h3><br>
+        <button class="play-btn" onclick="window.location.href='games';">Back to sfc</button>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p class="copyright">
+                © 2025 SchoolFlashCards3. Jaysoninthesubway and EKFun are affiliates of SchoolFlashCards3.™
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>
