@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!--Flashcards v5.2.2-->
-    <meta charset="UTF-8" />
+    <!--Flashcards v5.2.3-->
+    <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SchoolFlashCards5 - Unblocked Games</title>
 	
@@ -48,12 +48,17 @@
     transform: translateY(5px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     pointer-events: none;
+    white-space: nowrap;
 }
 
 .logo:hover .hover-text {
     opacity: 1;
     transform: translateY(0);
 }
+
+.nt{position:relative;display:inline-block;font-style:normal}
+.nt s{text-decoration-thickness:3px}
+.ek{position:absolute;left:0;top:100%;font-style:normal}
 
         header {
             background-color: var(--primary);
@@ -353,7 +358,7 @@
             text-decoration: none;
             font-weight: bold;
             transition: background-color 0.3s;
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 10px;
             white-space: nowrap;
         }
@@ -367,7 +372,7 @@
             text-decoration: none;
             font-weight: bold;
             transition: background-color 0.3s;
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 10px;
         }
 
@@ -380,7 +385,7 @@
             text-decoration: none;
             font-weight: bold;
             transition: background-color 0.3s;
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 10px;
         }
 
@@ -434,7 +439,7 @@
     <div class="header-left">
         <a href="games" class="logo">
             School<span>Flash</span>Cards
-            <span class="hover-text">Nny was here</span>
+            <span class="hover-text"><i class="nt"><s>Nny</s><i class="ek">EK</i></i> was here</span>
         </a>
         <button class="random-game-btn" id="randomGameBtn">Random Game</button>
         <a href="suggestions" class="suggestions-btn">Suggestions</a>
