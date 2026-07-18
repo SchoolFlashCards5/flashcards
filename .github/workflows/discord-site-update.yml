@@ -15,7 +15,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect added/removed games and notify Discord
+      - name: Detect changes and notify Discord
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BEFORE_SHA: ${{ github.event.before }}
@@ -40,7 +40,7 @@ jobs:
 
           file_path = "games.html"
 
-          def read_file_at_sha(sha: str, path: str) -> str:
+          def read_file_at_sha(sha, path):
               if not sha or sha == "0000000000000000000000000000000000000000":
                   return ""
               try:
@@ -55,35 +55,67 @@ jobs:
           before_text = read_file_at_sha(before_sha, file_path)
           after_text = read_file_at_sha(after_sha, file_path)
 
-          title_re = re.compile(
+          # -------------------------
+          # Detect game changes
+          # -------------------------
+
+          game_re = re.compile(
               r'<div class="game-card">.*?<h3 class="game-title">(.*?)</h3>',
-              re.S
+              re.S | re.I
           )
 
-          before_titles = Counter(title_re.findall(before_text))
-          after_titles = Counter(title_re.findall(after_text))
-
-          added = []
-          removed = []
-
-          for title, count in after_titles.items():
-              delta = count - before_titles.get(title, 0)
-              if delta > 0:
-                  added.extend([title] * delta)
-
-          for title, count in before_titles.items():
-              delta = count - after_titles.get(title, 0)
-              if delta > 0:
-                  removed.extend([title] * delta)
+          before_games = Counter(game_re.findall(before_text))
+          after_games = Counter(game_re.findall(after_text))
 
           messages = []
-          for title in added:
-              messages.append(f'A game "{title}" has been added.')
-          for title in removed:
-              messages.append(f'A game "{title}" has been removed.')
+
+          for title, count in after_games.items():
+              diff = count - before_games.get(title, 0)
+              for _ in range(diff):
+                  messages.append(f'🎮 A game "{title}" has been added.')
+
+          for title, count in before_games.items():
+              diff = count - after_games.get(title, 0)
+              for _ in range(diff):
+                  messages.append(f'🗑️ A game "{title}" has been removed.')
+
+          # -------------------------
+          # Detect status change
+          # -------------------------
+
+          def get_status(html):
+              match = re.search(
+                  r'<section class="hero".*?<b>(.*?)</b>',
+                  html,
+                  re.S | re.I
+              )
+              if not match:
+                  return ""
+              return re.sub(r"\s+", " ", match.group(1)).strip()
+
+          old_status = get_status(before_text)
+          new_status = get_status(after_text)
+
+          if old_status != new_status:
+              if old_status and new_status:
+                  messages.append(
+                      f'📢 Status updated to: "{new_status}"'
+                  )
+              elif new_status:
+                  messages.append(
+                      f'📢 Status added: "{new_status}"'
+                  )
+              else:
+                  messages.append(
+                      '📢 Status removed.'
+                  )
+
+          # -------------------------
+          # Nothing changed
+          # -------------------------
 
           if not messages:
-              print("No game-card changes detected.")
+              print("No relevant changes detected.")
               raise SystemExit(0)
 
           change_text = "\n".join(messages)
@@ -92,11 +124,18 @@ jobs:
               f"**Site updated in `{repo}`**\n"
               f"**Pushed by:** {committer}\n\n"
               f"**Changes pushed:**\n"
-              f"```text\n{change_text}\n```\n"
+              f"```text\n"
+              f"{change_text}\n"
+              f"```\n"
               f"@here"
           )
 
-          payload = json.dumps({"content": content}).encode("utf-8")
+          payload = json.dumps({
+              "content": content,
+              "allowed_mentions": {
+                  "parse": ["everyone"]
+              }
+          }).encode("utf-8")
 
           req = urllib.request.Request(
               webhook_url,
@@ -105,7 +144,7 @@ jobs:
                   "Content-Type": "application/json",
                   "User-Agent": "Mozilla/5.0"
               },
-              method="POST",
+              method="POST"
           )
 
           try:
