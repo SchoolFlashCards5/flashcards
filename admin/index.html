@@ -1,53 +1,392 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SFC Admin</title>
-  <link rel="stylesheet" href="css/admin.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFC Admin</title>
+<link rel="stylesheet" href="css/admin.css">
 </head>
+
 <body>
-  <div id="loadingOverlay" class="loading-overlay hidden"><div class="spinner"></div><p>Working with GitHub…</p></div>
-  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
-  <section id="loginView" class="login-view">
-    <div class="login-card">
-      <div class="brand-mark">SFC</div>
-      <h1>SchoolFlashCards Admin</h1>
-      <p>Sign in with GitHub to edit games and site notifications directly in this repository.</p>
-      <button id="loginBtn" class="btn primary">Sign in with GitHub</button>
-      <details><summary>OAuth setup</summary><p>Configure a GitHub OAuth App or GitHub App device flow, then enter its public Client ID in Settings. No client secret or PAT is stored.</p></details>
-    </div>
-  </section>
-  <div id="appView" class="app-shell hidden">
-    <aside class="sidebar">
-      <a class="logo" href="#dashboard">SFC<span>Admin</span></a>
-      <nav>
-        <a href="#dashboard" data-page="dashboard">Dashboard</a>
-        <a href="#games" data-page="games">Games</a>
-        <a href="#notifications" data-page="notifications">Notifications</a>
-        <a href="#settings" data-page="settings">Settings</a>
-        <a id="githubLink" href="https://github.com" target="_blank" rel="noopener">GitHub</a>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="user-pill"><span id="currentUser">Not signed in</span><small id="currentRepo">Repository not set</small></div>
-        <button id="logoutBtn" class="btn ghost">Logout</button>
-      </div>
-    </aside>
-    <main class="content">
-      <header class="topbar"><div><p class="eyebrow">Production CMS</p><h1 id="pageTitle">Dashboard</h1></div><button id="syncBtn" class="btn secondary">Sync Repository</button></header>
-      <section id="dashboardPage" class="page active">
-        <div class="stats-grid"><article><span>Total Games</span><strong id="totalGames">0</strong></article><article><span>New Games</span><strong id="newGames">0</strong></article><article><span>Hot Games</span><strong id="hotGames">0</strong></article><article><span>Fixed Games</span><strong id="fixedGames">0</strong></article></div>
-        <div class="panel"><h2>Recently Updated</h2><p id="recentlyUpdated">Sync the repository to load live website data.</p></div>
-        <div class="panel quick-actions"><h2>Quick Actions</h2><button class="btn primary" data-action="add-game">Add Game</button><button class="btn secondary" data-action="edit-notification">Edit Notification</button><button class="btn secondary" data-action="sync">Sync Repository</button></div>
-      </section>
-      <section id="gamesPage" class="page"><div class="toolbar"><input id="gameSearch" class="input" placeholder="Search games…"><button class="btn primary" data-action="add-game">Add Game</button><button id="saveGamesBtn" class="btn secondary">Save Games</button></div><div id="gamesList" class="game-list"></div><div id="gamesEmpty" class="empty hidden">No games found.</div></section>
-      <section id="notificationsPage" class="page"><div class="panel form-panel"><label>Announcement HTML<textarea id="announcementInput" class="input" rows="6"></textarea></label><label>Website status<select id="statusInput" class="input"><option>Online</option><option>Maintenance</option><option>Offline</option></select></label><div class="preview" id="notificationPreview"></div><button id="saveNotificationsBtn" class="btn primary">Save Notification</button></div></section>
-      <section id="settingsPage" class="page"><div class="panel settings-grid"><label>Repository owner<input id="ownerInput" class="input"></label><label>Repository name<input id="repoInput" class="input"></label><label>Default branch<input id="branchInput" class="input" value="main"></label><label>GitHub OAuth Client ID<input id="clientIdInput" class="input" placeholder="Public client id"></label><label>Theme<select id="themeInput" class="input"><option value="dark">Dark</option><option value="dim">Dim</option></select></label><button id="saveSettingsBtn" class="btn primary">Save Settings</button></div></section>
-    </main>
+
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <p>Working with GitHub…</p>
+</div>
+
+<div id="toastRegion" class="toast-region" aria-live="polite"></div>
+
+
+<section id="loginView" class="login-view">
+
+  <div class="login-card">
+
+    <div class="brand-mark">SFC</div>
+
+    <h1>SchoolFlashCards Admin</h1>
+
+    <p>
+      Sign in with GitHub to edit games and site notifications directly in this repository.
+    </p>
+
+    <button id="loginBtn" class="btn primary">
+      Sign in with GitHub
+    </button>
+
+    <details>
+      <summary>Setup</summary>
+      <p>
+        Uses GitHub App authentication through Cloudflare Worker.
+      </p>
+    </details>
+
   </div>
-  <div id="modalRoot" class="modal-root hidden"></div>
-  <script src="js/parser.js"></script>
-  <script src="js/github.js"></script>
-  <script src="js/ui.js"></script>
+
+</section>
+
+
+
+<div id="appView" class="app-shell hidden">
+
+
+<aside class="sidebar">
+
+<a class="logo" href="#dashboard">
+SFC<span>Admin</span>
+</a>
+
+
+<nav>
+
+<a href="#dashboard" data-page="dashboard">
+Dashboard
+</a>
+
+<a href="#games" data-page="games">
+Games
+</a>
+
+<a href="#notifications" data-page="notifications">
+Notifications
+</a>
+
+<a href="#settings" data-page="settings">
+Settings
+</a>
+
+<a id="githubLink" href="#" target="_blank">
+GitHub
+</a>
+
+</nav>
+
+
+<div class="sidebar-footer">
+
+<div class="user-pill">
+
+<span id="currentUser">
+Not signed in
+</span>
+
+<small id="currentRepo">
+Repository not set
+</small>
+
+</div>
+
+
+<button id="logoutBtn" class="btn ghost">
+Logout
+</button>
+
+
+</div>
+
+
+</aside>
+
+
+
+<main class="content">
+
+
+<header class="topbar">
+
+<div>
+
+<p class="eyebrow">
+Production CMS
+</p>
+
+<h1 id="pageTitle">
+Dashboard
+</h1>
+
+</div>
+
+
+<button id="syncBtn" class="btn secondary">
+Sync Repository
+</button>
+
+
+</header>
+
+
+
+<section id="dashboardPage" class="page active">
+
+<div class="stats-grid">
+
+<article>
+<span>Total Games</span>
+<strong id="totalGames">0</strong>
+</article>
+
+<article>
+<span>New Games</span>
+<strong id="newGames">0</strong>
+</article>
+
+<article>
+<span>Hot Games</span>
+<strong id="hotGames">0</strong>
+</article>
+
+<article>
+<span>Fixed Games</span>
+<strong id="fixedGames">0</strong>
+</article>
+
+</div>
+
+
+<div class="panel">
+
+<h2>
+Recently Updated
+</h2>
+
+<p id="recentlyUpdated">
+Sync the repository to load live website data.
+</p>
+
+</div>
+
+
+<div class="panel quick-actions">
+
+<h2>
+Quick Actions
+</h2>
+
+
+<button class="btn primary" data-action="add-game">
+Add Game
+</button>
+
+
+<button class="btn secondary" data-action="edit-notification">
+Edit Notification
+</button>
+
+
+<button class="btn secondary" data-action="sync">
+Sync Repository
+</button>
+
+
+</div>
+
+
+</section>
+
+
+
+
+<section id="gamesPage" class="page">
+
+<div class="toolbar">
+
+<input id="gameSearch" class="input" placeholder="Search games…">
+
+
+<button class="btn primary" data-action="add-game">
+Add Game
+</button>
+
+
+<button id="saveGamesBtn" class="btn secondary">
+Save Games
+</button>
+
+
+</div>
+
+
+<div id="gamesList" class="game-list"></div>
+
+
+<div id="gamesEmpty" class="empty hidden">
+No games found.
+</div>
+
+
+</section>
+
+
+
+
+
+<section id="notificationsPage" class="page">
+
+
+<div class="panel form-panel">
+
+
+<label>
+Announcement HTML
+
+<textarea id="announcementInput" class="input" rows="6"></textarea>
+
+</label>
+
+
+
+<label>
+
+Website status
+
+<select id="statusInput" class="input">
+
+<option>
+Online
+</option>
+
+<option>
+Maintenance
+</option>
+
+<option>
+Offline
+</option>
+
+</select>
+
+
+</label>
+
+
+
+<div class="preview" id="notificationPreview"></div>
+
+
+<button id="saveNotificationsBtn" class="btn primary">
+Save Notification
+</button>
+
+
+</div>
+
+
+</section>
+
+
+
+
+
+<section id="settingsPage" class="page">
+
+
+<div class="panel settings-grid">
+
+
+<label>
+Repository owner
+
+<input id="ownerInput" class="input">
+
+</label>
+
+
+
+<label>
+Repository name
+
+<input id="repoInput" class="input">
+
+</label>
+
+
+
+<label>
+Default branch
+
+<input id="branchInput" class="input" value="main">
+
+</label>
+
+
+
+
+<label>
+Cloudflare Worker URL
+
+<input id="workerUrlInput" class="input" placeholder="https://your-worker.workers.dev">
+
+</label>
+
+
+
+<label>
+
+Theme
+
+<select id="themeInput" class="input">
+
+<option value="dark">
+Dark
+</option>
+
+<option value="dim">
+Dim
+</option>
+
+</select>
+
+</label>
+
+
+
+<button id="saveSettingsBtn" class="btn primary">
+
+Save Settings
+
+</button>
+
+
+</div>
+
+
+</section>
+
+
+
+</main>
+
+</div>
+
+
+
+<div id="modalRoot" class="modal-root hidden"></div>
+
+
+
+<script src="js/parser.js"></script>
+<script src="js/github.js"></script>
+<script src="js/ui.js"></script>
+
+
 </body>
 </html>
