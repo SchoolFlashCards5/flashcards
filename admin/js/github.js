@@ -2,10 +2,12 @@
 
   const STORE = "sfc_admin_auth";
 
+
   const settings = () =>
     JSON.parse(
       localStorage.getItem("sfc_admin_settings") || "{}"
     );
+
 
   const auth = () =>
     JSON.parse(
@@ -20,12 +22,14 @@
     );
 
 
-  async function api(path, options={}) {
+
+  async function api(path, options = {}) {
 
     const token = auth().access_token;
 
-    if (!token)
+    if (!token) {
       throw new Error("Sign in with GitHub first.");
+    }
 
 
     const res = await fetch(
@@ -33,10 +37,10 @@
       {
         ...options,
 
-        headers:{
-          Accept:"application/vnd.github+json",
-          Authorization:`Bearer ${token}`,
-          "X-GitHub-Api-Version":"2022-11-28",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
           ...(options.headers || {})
         }
       }
@@ -45,18 +49,24 @@
 
     const data =
       await res.json()
-      .catch(()=>({}));
+      .catch(() => ({}));
 
 
-    if(!res.ok)
+    if (!res.ok) {
+
       throw new Error(
         data.message ||
         `GitHub API error ${res.status}`
       );
 
+    }
+
 
     return data;
+
   }
+
+
 
 
 
@@ -65,10 +75,14 @@
     const s = settings();
 
 
-    if(!s.workerUrl)
+    if (!s.workerUrl) {
+
       throw new Error(
-        "Add your Cloudflare Worker URL in Settings."
+        "Cloudflare Worker URL missing."
       );
+
+    }
+
 
 
     const res = await fetch(
@@ -80,43 +94,80 @@
       await res.json();
 
 
-    if(!data.token)
+    if (!data.token) {
+
       throw new Error(
         data.error ||
-        "Failed getting GitHub token."
+        "Failed getting GitHub App token."
       );
+
+    }
 
 
     saveAuth({
-      access_token:data.token,
-      created_at:Date.now()
+
+      access_token: data.token,
+
+      created_at: Date.now()
+
     });
+
+
   }
+
+
 
 
 
   function logout(){
-    localStorage.removeItem(STORE);
+
+    localStorage.removeItem(
+      STORE
+    );
+
   }
+
+
+
 
 
 
   async function getCurrentUser(){
-    return api("/user");
+
+    const s = settings();
+
+
+    return {
+
+      login: s.owner,
+
+      name: "GitHub App"
+
+    };
+
   }
+
+
+
 
 
 
   async function getFile(path){
 
-    const s=settings();
+    const s = settings();
+
 
     return api(
       `/repos/${s.owner}/${s.repo}/contents/${path}?ref=${encodeURIComponent(
         s.branch || "main"
       )}`
     );
+
   }
+
+
+
+
 
 
 
@@ -127,24 +178,30 @@
     sha
   ){
 
-    const s=settings();
+    const s = settings();
 
 
     return api(
       `/repos/${s.owner}/${s.repo}/contents/${path}`,
       {
-        method:"PUT",
 
-        headers:{
-          "Content-Type":"application/json"
+        method: "PUT",
+
+
+        headers: {
+
+          "Content-Type":
+          "application/json"
+
         },
 
 
-        body:JSON.stringify({
+        body: JSON.stringify({
 
           message,
 
-          content:btoa(
+          content:
+          btoa(
             unescape(
               encodeURIComponent(content)
             )
@@ -152,12 +209,19 @@
 
           sha,
 
-          branch:s.branch || "main"
+          branch:
+          s.branch || "main"
 
         })
+
       }
     );
+
   }
+
+
+
+
 
 
 
@@ -172,18 +236,24 @@
     return {
 
       html:
-        decodeURIComponent(
-          escape(
-            atob(
-              f.content.replace(/\n/g,"")
-            )
+      decodeURIComponent(
+        escape(
+          atob(
+            f.content.replace(/\n/g,"")
           )
-        ),
+        )
+      ),
+
 
       sha:f.sha
 
     };
+
   }
+
+
+
+
 
 
 
@@ -193,21 +263,54 @@
   ){
 
     return putFile(
+
       "games.html",
+
       updatedHtml,
+
       "Update games from admin panel",
+
       sha
+
     );
 
   }
 
 
 
+
+
+
+
   async function downloadNotifications(){
 
-    return downloadGamesHTML();
+    const f =
+      await getFile(
+        "games.html"
+      );
+
+
+    return {
+
+      html:
+      decodeURIComponent(
+        escape(
+          atob(
+            f.content.replace(/\n/g,"")
+          )
+        )
+      ),
+
+
+      sha:f.sha
+
+    };
 
   }
+
+
+
+
 
 
 
@@ -217,29 +320,43 @@
   ){
 
     return putFile(
+
       "games.html",
+
       updatedHtml,
+
       "Update site notification from admin panel",
+
       sha
+
     );
 
   }
 
 
 
+
+
+
+
   global.SFCGitHub = {
 
     login,
+
     logout,
+
     getCurrentUser,
 
     downloadGamesHTML,
+
     commitGamesHTML,
 
     downloadNotifications,
+
     commitNotifications,
 
-    hasToken:()=>!!auth().access_token,
+    hasToken: () =>
+      !!auth().access_token,
 
     settings
 
