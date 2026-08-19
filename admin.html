@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<!-- ============================================================
+  SCHOOLFLASHCARDS5 — sfc-admin.html
+
+  Admin panel for the SchoolFlashCards5 game list. Not linked from
+  the public site on purpose — bookmark this page's URL.
+
+  This reuses the SAME Firebase project as PinkGame's admin panel
+  (so the same login you created there works here too), but reads
+  and writes a SEPARATE document — site/sfc-games — so the two
+  game lists never mix. If you'd rather keep this on a completely
+  separate Firebase project, swap the firebaseConfig below for a
+  new project's config; everything else stays the same.
+
+  Once logged in you can add, edit, and delete games. Changes show
+  up on the public games page the next time it's loaded.
+============================================================ -->
+
+<title>SchoolFlashCards5 — Admin</title>
+<link rel="icon" type="image/x-icon" href="logo.png">
+
+<style>
+:root {
+  --primary: #4ECDC4;
+  --accent: #FFE66D;
+  --dark: #292F36;
+  --light: #F7FFF7;
+  --button: #FF6B6B;
+  --danger: #d64545;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Comic Sans MS", cursive, sans-serif; }
+body { background: var(--light); color: var(--dark); min-height: 100vh; }
+
+header {
+  background: var(--primary);
+  padding: 0 32px; height: 62px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.logo { font-size: 22px; font-weight: bold; color: white; }
+.logo span { color: var(--accent); }
+.hdr-spacer { margin-left: auto; }
+.btn-logout {
+  background: var(--dark); color: var(--accent); border: none;
+  padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;
+  font-family: inherit; transition: all 0.2s; display: none;
+}
+.btn-logout:hover { background: var(--danger); color: white; }
+
+main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
+
+/* ── LOGIN ─────────────────────────────────────────────── */
+#loginView {
+  max-width: 380px; margin: 70px auto 0;
+  background: white; border-radius: 12px; padding: 30px;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.1);
+}
+#loginView h1 { font-size: 22px; color: var(--dark); margin-bottom: 6px; }
+#loginView p.sub { color: #777; font-size: 14px; margin-bottom: 20px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: bold; color: var(--dark); margin-bottom: 6px; }
+.field input[type="text"], .field input[type="email"], .field input[type="password"], .field input[type="url"] {
+  width: 100%; border: 2px solid #e2e2e2; color: var(--dark);
+  font-family: inherit; font-size: 15px; padding: 9px 12px;
+  border-radius: 8px; outline: none; transition: border-color 0.2s;
+}
+.field input:focus { border-color: var(--primary); }
+
+.btn-primary {
+  background: var(--button); border: none; color: white;
+  font-family: inherit; font-weight: bold; font-size: 15px;
+  padding: 11px 20px; border-radius: 8px; cursor: pointer; width: 100%;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #e85555; }
+
+.error-box {
+  background: #ffe3e3; border: 1px solid #ffb3b3; color: #a11;
+  font-size: 13px; font-weight: bold; padding: 9px 12px;
+  border-radius: 8px; margin-bottom: 14px; display: none;
+}
+
+/* ── DASHBOARD ─────────────────────────────────────────── */
+#adminView { display: none; }
+.panel {
+  background: white; border-radius: 12px; padding: 26px;
+  margin-bottom: 26px; box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+}
+.panel h2 { font-size: 18px; color: var(--dark); margin-bottom: 18px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.form-grid .span-2 { grid-column: 1 / -1; }
+
+.checkbox-row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
+.checkbox-row label { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: bold; color: var(--dark); cursor: pointer; }
+.checkbox-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--button); cursor: pointer; }
+
+.thumb-preview {
+  width: 100%; height: 150px; border-radius: 8px;
+  background: var(--primary); border: 2px solid #e2e2e2;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; color: white; font-weight: bold; font-size: 13px; text-align: center; padding: 10px;
+  background-size: cover; background-position: center;
+}
+
+.input-with-btn { display: flex; gap: 8px; }
+.input-with-btn input { flex: 1; min-width: 0; }
+.picker-toggle-btn {
+  flex-shrink: 0; width: 42px; background: #f2f2f2; border: 2px solid #e2e2e2;
+  border-radius: 8px; font-size: 1.1rem; cursor: pointer; transition: border-color 0.15s;
+}
+.picker-toggle-btn:hover, .picker-toggle-btn.active { border-color: var(--primary); }
+
+.img-search-panel {
+  display: none; margin-top: 8px; background: #f7f7f7;
+  border: 2px solid #e2e2e2; border-radius: 8px; padding: 10px;
+}
+.img-search-panel.open { display: block; }
+.img-search-bar { display: flex; gap: 8px; margin-bottom: 8px; }
+.img-search-bar input {
+  flex: 1; min-width: 0; border: 2px solid #e2e2e2; color: var(--dark);
+  font-family: inherit; font-size: 14px; padding: 8px 10px; border-radius: 6px; outline: none;
+}
+.img-search-bar input:focus { border-color: var(--primary); }
+.btn-search {
+  flex-shrink: 0; background: var(--button); border: none; color: white;
+  font-family: inherit; font-weight: bold; font-size: 13px;
+  padding: 0 16px; border-radius: 6px; cursor: pointer;
+}
+.img-search-note { color: #888; font-size: 12px; line-height: 1.5; margin-bottom: 10px; }
+.img-search-results {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px; max-height: 260px; overflow-y: auto;
+}
+.img-result { aspect-ratio: 1/1; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; background: white; }
+.img-result:hover { border-color: var(--button); }
+.img-result img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-search-status { grid-column: 1 / -1; color: #888; font-size: 13px; text-align: center; padding: 14px 0; }
+
+.form-actions { display: flex; gap: 10px; margin-top: 20px; }
+.form-actions .btn-primary { width: auto; flex: 1; }
+.btn-cancel {
+  background: white; border: 2px solid #e2e2e2; color: #777;
+  font-family: inherit; font-weight: bold; font-size: 14px;
+  padding: 10px 20px; border-radius: 8px; cursor: pointer; display: none;
+}
+.btn-cancel:hover { border-color: var(--danger); color: var(--danger); }
+
+.save-msg { font-size: 13px; font-weight: bold; margin-top: 12px; display: none; }
+.save-msg.ok { color: #1a8a4a; }
+.save-msg.err { color: var(--danger); }
+
+/* ── GAMES LIST ────────────────────────────────────────── */
+.list-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.list-toolbar input {
+  flex: 1; border: 2px solid #e2e2e2; color: var(--dark);
+  font-family: inherit; font-size: 14px; padding: 9px 12px; border-radius: 8px; outline: none;
+}
+.list-toolbar input:focus { border-color: var(--primary); }
+.count-pill { font-size: 13px; color: #888; font-weight: bold; white-space: nowrap; }
+
+.game-row { display: flex; align-items: center; gap: 14px; padding: 10px; border-bottom: 1px solid #eee; }
+.game-row:last-child { border-bottom: none; }
+.row-thumb { width: 70px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--primary); flex-shrink: 0; }
+.row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.row-info { flex: 1; min-width: 0; }
+.row-name { font-weight: bold; font-size: 15px; color: var(--dark); }
+.row-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+.mini-badge { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 10px; color: white; }
+.mini-badge.new { background: #18bf3a; }
+.mini-badge.hot { background: #be0000; }
+.mini-badge.fixed { background: #2bbcff; }
+.row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.row-actions button {
+  background: white; border: 2px solid #e2e2e2; color: #666;
+  font-family: inherit; font-weight: bold; font-size: 12px;
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.row-actions .btn-edit:hover { border-color: var(--primary); color: #1a8a80; }
+.row-actions .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+.empty-note, .loading-note { color: #999; font-size: 14px; text-align: center; padding: 26px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">School<span>Flash</span>Cards <span style="font-size:13px; opacity:0.85;">ADMIN</span></a>
+  <div class="hdr-spacer"></div>
+  <button class="btn-logout" id="logoutBtn">Log Out</button>
+</header>
+
+<main>
+
+  <div id="loginView">
+    <h1>Admin Login</h1>
+    <p class="sub">Sign in with the admin account (same one as PinkGame, if you reused that project).</p>
+    <div class="error-box" id="loginError"></div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-primary" id="loginBtn">Sign In</button>
+  </div>
+
+  <div id="adminView">
+
+    <div class="panel">
+      <h2 id="formTitle">Add A Game</h2>
+      <div class="form-grid">
+        <div class="field span-2">
+          <label>Name *</label>
+          <input type="text" id="fName" placeholder="e.g. BTD4!"/>
+        </div>
+
+        <div class="field span-2">
+          <label>Game URL *</label>
+          <input type="url" id="fUrl" placeholder="https://..."/>
+        </div>
+
+        <div class="field span-2">
+          <label>Thumbnail Image URL *</label>
+          <div class="input-with-btn">
+            <input type="url" id="fImg" placeholder="https://..."/>
+            <button type="button" class="picker-toggle-btn" id="imgSearchToggle" title="Search for an image">🔍</button>
+          </div>
+          <div class="img-search-panel" id="imgSearchPanel">
+            <div class="img-search-bar">
+              <input type="text" id="imgSearchInput" placeholder="Search images… e.g. tower defense"/>
+              <button type="button" class="btn-search" id="imgSearchBtn">Search</button>
+            </div>
+            <div class="img-search-note">
+              Searches Wikimedia Commons (openly-licensed images) — good for general topics and
+              logos, thinner on commercial game art. You can still paste any direct image URL above.
+            </div>
+            <div class="img-search-results" id="imgSearchResults"></div>
+          </div>
+        </div>
+
+        <div class="field span-2">
+          <label>Preview</label>
+          <div class="thumb-preview" id="thumbPreview">No image yet</div>
+        </div>
+
+        <div class="field span-2 checkbox-row">
+          <label><input type="checkbox" id="fNew"/> New! ✨</label>
+          <label><input type="checkbox" id="fPop"/> Hot! 🔥</label>
+          <label><input type="checkbox" id="fFixed"/> Fixed 🔨</label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" id="saveBtn">Add Game</button>
+        <button class="btn-cancel" id="cancelBtn">Cancel Edit</button>
+      </div>
+      <div class="save-msg" id="saveMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>All Games</h2>
+      <div class="list-toolbar">
+        <input type="text" id="listSearch" placeholder="Filter by name..."/>
+        <span class="count-pill" id="listCount">0 games</span>
+      </div>
+      <div id="gamesList"><div class="loading-note">Loading games…</div></div>
+    </div>
+
+  </div>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+  import {
+    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+  } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js';
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3jxwyH9Pws4nhIT9ScDffk5CpHa99oMM",
+    authDomain: "pinkgame-1d4bf.firebaseapp.com",
+    projectId: "pinkgame-1d4bf",
+    storageBucket: "pinkgame-1d4bf.firebasestorage.app",
+    messagingSenderId: "531941128309",
+    appId: "1:531941128309:web:82e55394c6f48666a3603c",
+    measurementId: "G-WF5YT7S04W"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const DOC_REF = doc(db, 'site', 'sfc-games'); // separate document from PinkGame's site/games
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────
+  const loginView = document.getElementById('loginView');
+  const adminView = document.getElementById('adminView');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const loginError = document.getElementById('loginError');
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    loginError.style.display = 'none';
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      loginError.textContent = 'Sign-in failed — check the email and password and try again.';
+      loginError.style.display = 'block';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginView.style.display = 'none';
+      adminView.style.display = 'block';
+      logoutBtn.style.display = 'inline-block';
+      loadGamesList();
+    } else {
+      loginView.style.display = 'block';
+      adminView.style.display = 'none';
+      logoutBtn.style.display = 'none';
+    }
+  });
+
+  // ── FORM STATE ────────────────────────────────────────────
+  // All games are stored as ONE array in ONE Firestore document
+  // (site/sfc-games, field "list"). Every add/edit/delete here reads
+  // the whole list into memory, changes it, and writes it all back.
+  let editingId = null;
+  let allGames = [];
+  let listFilter = '';
+
+  function newGameId() {
+    return (crypto.randomUUID ? crypto.randomUUID() : `g_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+  }
+
+  async function saveGamesList(updatedList) {
+    await setDoc(DOC_REF, { list: updatedList });
+    allGames = updatedList;
+  }
+
+  const fName = document.getElementById('fName');
+  const fUrl = document.getElementById('fUrl');
+  const fImg = document.getElementById('fImg');
+  const fNew = document.getElementById('fNew');
+  const fPop = document.getElementById('fPop');
+  const fFixed = document.getElementById('fFixed');
+  const thumbPreview = document.getElementById('thumbPreview');
+  const formTitle = document.getElementById('formTitle');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const saveMsg = document.getElementById('saveMsg');
+
+  function updatePreview() {
+    const url = fImg.value.trim();
+    if (url) {
+      thumbPreview.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+      thumbPreview.textContent = '';
+    } else {
+      thumbPreview.style.backgroundImage = 'none';
+      thumbPreview.textContent = 'No image yet';
+    }
+  }
+  fImg.addEventListener('input', updatePreview);
+
+  function resetForm() {
+    editingId = null;
+    fName.value = ''; fUrl.value = ''; fImg.value = '';
+    fNew.checked = false; fPop.checked = false; fFixed.checked = false;
+    formTitle.textContent = 'Add A Game';
+    saveBtn.textContent = 'Add Game';
+    cancelBtn.style.display = 'none';
+    saveMsg.style.display = 'none';
+    closeImgSearch();
+    imgSearchInput.value = '';
+    imgSearchResults.innerHTML = '';
+    updatePreview();
+  }
+
+  cancelBtn.addEventListener('click', resetForm);
+
+  saveBtn.addEventListener('click', async () => {
+    const name = fName.value.trim();
+    const url = fUrl.value.trim();
+    const img = fImg.value.trim();
+    if (!name || !url || !img) {
+      saveMsg.textContent = 'Name, Game URL, and Thumbnail Image URL are all required.';
+      saveMsg.className = 'save-msg err';
+      saveMsg.style.display = 'block';
+      return;
+    }
+
+    const gameData = {
+      id: editingId || newGameId(),
+      name, url, img,
+      isNew: fNew.checked,
+      isPop: fPop.checked,
+      isFixed: fFixed.checked,
+    };
+
+    saveBtn.disabled = true;
+    try {
+      let updatedList;
+      if (editingId) {
+        updatedList = allGames.map(g => g.id === editingId ? gameData : g);
+        saveMsg.textContent = 'Game updated.';
+      } else {
+        updatedList = [...allGames, gameData];
+        saveMsg.textContent = 'Game added.';
+      }
+      await saveGamesList(updatedList);
+      saveMsg.className = 'save-msg ok';
+      saveMsg.style.display = 'block';
+      resetForm();
+      renderList();
+    } catch (err) {
+      console.error(err);
+      saveMsg.textContent = 'Could not save — check your Firestore rules and connection.';
+      saveMsg.className = 'save-msg err';
+      saveMsg.style.display = 'block';
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  // ── IMAGE SEARCH (Wikimedia Commons — free, no API key needed) ───
+  const imgSearchToggle = document.getElementById('imgSearchToggle');
+  const imgSearchPanel = document.getElementById('imgSearchPanel');
+  const imgSearchInput = document.getElementById('imgSearchInput');
+  const imgSearchBtn = document.getElementById('imgSearchBtn');
+  const imgSearchResults = document.getElementById('imgSearchResults');
+
+  function openImgSearch() {
+    imgSearchPanel.classList.add('open');
+    imgSearchToggle.classList.add('active');
+    imgSearchInput.focus();
+  }
+  function closeImgSearch() {
+    imgSearchPanel.classList.remove('open');
+    imgSearchToggle.classList.remove('active');
+  }
+  imgSearchToggle.addEventListener('click', () => {
+    imgSearchPanel.classList.contains('open') ? closeImgSearch() : openImgSearch();
+  });
+  document.addEventListener('click', (e) => {
+    if (!imgSearchPanel.contains(e.target) && e.target !== imgSearchToggle) closeImgSearch();
+  });
+
+  async function runImageSearch() {
+    const term = imgSearchInput.value.trim();
+    if (!term) return;
+    imgSearchResults.innerHTML = '<div class="img-search-status">Searching…</div>';
+    try {
+      const url = 'https://commons.wikimedia.org/w/api.php?' + new URLSearchParams({
+        action: 'query', generator: 'search', gsrnamespace: '6',
+        gsrsearch: term, gsrlimit: '24', prop: 'imageinfo',
+        iiprop: 'url', iiurlwidth: '400', format: 'json', origin: '*'
+      });
+      const res = await fetch(url);
+      const data = await res.json();
+      const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+      const results = pages
+        .map(p => p.imageinfo && p.imageinfo[0])
+        .filter(info => info && (info.thumburl || info.url) && /\.(jpe?g|png|gif|webp)(\?|$)/i.test(info.thumburl || info.url));
+
+      if (results.length === 0) {
+        imgSearchResults.innerHTML = '<div class="img-search-status">No image results — try a different search.</div>';
+        return;
+      }
+
+      imgSearchResults.innerHTML = results.map((info, i) =>
+        `<div class="img-result" data-i="${i}"><img src="${escapeHtml(info.thumburl || info.url)}" loading="lazy"></div>`
+      ).join('');
+      imgSearchResults.querySelectorAll('.img-result').forEach(el => {
+        el.addEventListener('click', () => {
+          const info = results[Number(el.dataset.i)];
+          fImg.value = info.thumburl || info.url;
+          updatePreview();
+          closeImgSearch();
+        });
+      });
+    } catch (err) {
+      console.error(err);
+      imgSearchResults.innerHTML = '<div class="img-search-status">Search failed — check your connection.</div>';
+    }
+  }
+  imgSearchBtn.addEventListener('click', runImageSearch);
+  imgSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); runImageSearch(); }
+  });
+
+  // ── GAMES LIST ────────────────────────────────────────────
+  document.getElementById('listSearch').addEventListener('input', (e) => {
+    listFilter = e.target.value.toLowerCase();
+    renderList();
+  });
+
+  async function loadGamesList() {
+    const listEl = document.getElementById('gamesList');
+    try {
+      const snap = await getDoc(DOC_REF);
+      allGames = snap.exists() ? (snap.data().list || []) : [];
+    } catch (err) {
+      console.error(err);
+      listEl.innerHTML = '<div class="empty-note">Could not load games — check Firestore is set up and rules allow reads.</div>';
+      return;
+    }
+    renderList();
+  }
+
+  function renderList() {
+    const listEl = document.getElementById('gamesList');
+    const filtered = allGames.filter(g => (g.name || '').toLowerCase().includes(listFilter));
+    document.getElementById('listCount').textContent = `${filtered.length} game${filtered.length === 1 ? '' : 's'}`;
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="empty-note">No games yet — add one above.</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(g => {
+      const badges = [
+        g.isNew ? '<span class="mini-badge new">NEW</span>' : '',
+        g.isPop ? '<span class="mini-badge hot">HOT</span>' : '',
+        g.isFixed ? '<span class="mini-badge fixed">FIXED</span>' : '',
+      ].join('');
+      return `
+      <div class="game-row">
+        <div class="row-thumb"><img src="${escapeHtml(g.img)}" loading="lazy"></div>
+        <div class="row-info"><div class="row-name">${escapeHtml(g.name)}</div></div>
+        <div class="row-badges">${badges}</div>
+        <div class="row-actions">
+          <button class="btn-edit" data-id="${g.id}">Edit</button>
+          <button class="btn-delete" data-id="${g.id}">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.btn-edit').forEach(btn =>
+      btn.addEventListener('click', () => startEdit(btn.dataset.id))
+    );
+    listEl.querySelectorAll('.btn-delete').forEach(btn =>
+      btn.addEventListener('click', () => deleteGame(btn.dataset.id))
+    );
+  }
+
+  function startEdit(id) {
+    const g = allGames.find(x => x.id === id);
+    if (!g) return;
+    editingId = g.id;
+    fName.value = g.name || '';
+    fUrl.value = g.url || '';
+    fImg.value = g.img || '';
+    fNew.checked = !!g.isNew;
+    fPop.checked = !!g.isPop;
+    fFixed.checked = !!g.isFixed;
+    formTitle.textContent = `Editing "${g.name}"`;
+    saveBtn.textContent = 'Update Game';
+    cancelBtn.style.display = 'inline-block';
+    saveMsg.style.display = 'none';
+    updatePreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteGame(id) {
+    const g = allGames.find(x => x.id === id);
+    if (!g) return;
+    if (!confirm(`Delete "${g.name}"? This can't be undone.`)) return;
+    try {
+      const updatedList = allGames.filter(x => x.id !== id);
+      await saveGamesList(updatedList);
+      if (editingId === id) resetForm();
+      renderList();
+    } catch (err) {
+      console.error(err);
+      alert('Could not delete — check your Firestore rules and connection.');
+    }
+  }
+
+  updatePreview();
+</script>
+</body>
+</html>
