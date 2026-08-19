@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!--Flashcards v5.2.3-->
+    <!--Flashcards v5.2.3 — games now load from a database, see the script at the bottom-->
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SchoolFlashCards5 - Unblocked Games</title>
@@ -270,9 +270,23 @@
             padding: 15px;
         }
 
+        .game-info-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .badges-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
         .game-title {
             font-size: 18px;
-            margin-bottom: 10px;
             color: var(--dark);
         }
 
@@ -359,7 +373,6 @@
             font-weight: bold;
             transition: background-color 0.3s;
             font-size: 16px;
-            margin-bottom: 10px;
             white-space: nowrap;
         }
 
@@ -373,7 +386,6 @@
             font-weight: bold;
             transition: background-color 0.3s;
             font-size: 16px;
-            margin-bottom: 10px;
         }
 
         .fixed-btn {
@@ -386,7 +398,14 @@
             font-weight: bold;
             transition: background-color 0.3s;
             font-size: 16px;
-            margin-bottom: 10px;
+        }
+
+        .status-msg {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #777;
         }
 
         /* Stack on mobile only */
@@ -474,19 +493,10 @@
   </div>
 </section>
 <!-- 
-GAME CARD INSTRUCTIONS:
-
-- .game-card : main container for a game
-- .game-image : div for the game's image, set via background-image
-- .game-info : container for the title and play button
-- .game-title : the name of the game
-- .awardshii-btn : optional "New!" badge (to add later)
-- .play-btn : the "Play Now" button
-
-TO ADD A "NEW!" BADGE LATER:
-1. Inside the .game-info flex container, add <h3 class="awardshii-btn">New! ✨</h3>
-2. Make the container `display: flex; align-items: center; justify-content: space-between;`
-3. Badge will automatically go to the far right
+GAMES NOW LIVE IN A DATABASE, NOT IN THIS FILE.
+To add, edit, or delete games, open sfc-admin.html and log in.
+This page just reads whatever is in the game list and renders it —
+you never need to touch this file's HTML to manage the game list.
 -->
 
 
@@ -496,479 +506,13 @@ TO ADD A "NEW!" BADGE LATER:
         <div class="container">
             <h1 class="section-title">Games</h1>
             
-            <div class="games-grid">
-				
-			<!-- START GAMES -->
-				
-                <!--Game 45 ig (peak)-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse2.mm.bing.net/th/id/OIP.wa-PqPNcbTid5f4kbT4cjgHaDt?r=0&rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">BTD4!</h3><h3 class="awardshii-btn">New! ✨</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/bloonstowerdefense4/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-
-                <!--Game 44-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://www.coolmathgames.com/sites/default/files/OvO_OG-logo.jpg');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">OvO!</h3><h3 class="awardshii-btn">New! ✨</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/ovo" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!--Game 44-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse2.mm.bing.net/th/id/OIP.pEu5r8OQgSMaKKkvK5yV6AHaDn?r=0&rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Jetpack Joyride!</h3><h3 class="awardshii-btn">New! ✨</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/jetpack-joyride" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!-- Game 5 -->
-                <div class="game-card">
-                <div class="game-image" style="background-image: url('https://geometrydash.io/data/image/game/csgoclicker.PNG');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">CSGO Clicker!</h3><h3 class="fixed-btn">Fixed 🔨</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/CSGOClicker/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <div class="game-card">
-                <div class="game-image" style="background-image: url('https://imgs.crazygames.com/moto-x3m_1x1/20231122033955/moto-x3m_1x1-cover?format=auto&quality=100&metadata=none&width=1200');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Moto X3M!</h3><h3 class="fixed-btn">Fixed 🔨</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/motox3m-winter/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!--Game 35-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeXeJFJB24bPdjHgRUCyIaavYqeB9oe9Rsgw&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Doom 1+2!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/webDOOM/public" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!--Game 40-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse3.mm.bing.net/th/id/OIP.5Tr4GwjxoPA_DzPJAW1C6wHaDn?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">GladiHoppers!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/gladdihoppers" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!--Game 42-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://th.bing.com/th/id/R.9c31ca384c511abc490976fbe0d77513?rik=0iquzU6dhN6zYQ&pid=ImgRaw&r=0');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Rocket League!</h3> <h3 class="hotgames-btn">Hot! 🔥</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/rocketsoccerderby/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-		
-
-                <!--Game 44-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTriRa08LT5_44xw-Rqo3_BpkSEPS47B0_B-A&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Dinosaur Game!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/dinosaur-game/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-                <!--Game 43-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzDMK5DgCHi7UohqEi6ijL_0_TiMBAu8-zCA&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">PokemonFireRed!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/pokemon-firered/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-				<!--Game 41-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse4.mm.bing.net/th/id/OIP.iJjSsJ2T4Ynyn72cZw1rTgHaEU?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Run 3!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/run3" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-				<!--Game 33-->
-				<div class="game-card">
-                    <div class="game-image" style="background-image: url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2673990/header.jpg?t=1723312296');"></div>
-                    <div class="game-info">
-						<div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">Animal Arena!</h3> 
-						</div>
-                        <a href="https://schoolflashcards5.github.io/animal-arena/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!--Game 34-->
-        	    <div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse1.mm.bing.net/th/id/OIP.e-rHpfrNDgjrb5WCJtmgnAHaES?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Drift Boss!</h3> 
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/drift-boss/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-				<!--use https://pcagames.com/wp-content/uploads/2023/07/drift-boss.jpg after april-->
-
-				<!--Game 39-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse2.mm.bing.net/th/id/OIP.ASM6tUWCDbxvnZvSQT1GWgHaD4?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">1v1.LoL!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/1v1lol" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-				<!--Game 38-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse2.mm.bing.net/th/id/OIP.tmrpqrpz-I7DUfsZnerfkQHaEK?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">FNAF Sister Location!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fnafsl" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-				        <!--Game 37-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('fnaf4halloween.jpg');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">FNAF 4 Halloween!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fnaf4halloween" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-				        <!--Game 36-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.TQtgkQVqbouFFZjEaogyCgHaEK?o=7rm=3&rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">FNAF 3!</h3> 
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fnaf3" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-        
-
-				
-			<!--Game 32-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse1.mm.bing.net/th/id/OIP.-qLRR7Qoa0e5FYOvdKL_fgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">A Dance of Fire and Ice</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fire-ice/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-			<!--Game 31-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://tse3.mm.bing.net/th/id/OIP.mPXfDKMpSF5nK-gIuWY3sQHaEK?rs=1&pid=ImgDetMain&o=7&rm=3');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Geometry Lite!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/geometry-lite/" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-            
-            <!--Game 30-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSv9kqCGr10bvrGn5DU3G8NmTeNPtqZjxYCIw&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">FNAF 2!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fnaf2" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-            
-            		<!--Game 29-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSFgSrXhj4YY-AAx5_P_CBBdYX5DSuVh8bZw&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">FNAF 1!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/fnaf1" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-            
-            			<!--Game 28-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSqkypx7h26Ajb7LRsl5sbxzRIrZWvGN0TZZA&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">2048!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/2048" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-
-							<!--Game 27-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNhEnACclj7tRbtrB-TSUozTK3YBLm2Cghrw&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">Block Blast!</h3> 
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/blockblast" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-				
-							<!--Game 26-->
-				<div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_XIUk_3JSrxB_yzBYnqzOVtm-Qdw4DGLctg&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">Snow Rider!</h3> 
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/snowrider" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-                                <!--Game 25-->
-                <div class="game-card">
-                <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCwIdCYJnRmDUQnpDKNvY31bHNh_3NevoPjg&s');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <h3 class="game-title">Minesweeper!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/minesweeper" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-                
-                                <!-- Game 14 -->
-                <div class="game-card">
-                <div class="game-image" style="background-image: url('https://wallpaper.dog/large/815735.jpg');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center;">
-                        <h3 class="game-title">Minecraft!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/mc" class="play-btn">Play Now</a>
-                  </div>
-                </div>
-                
-                <!-- Game 20 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://thegadgetlite.com/wp-content/uploads/2023/02/retro-bowl-1024x512.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Retro Bowl!</h3>
-                        <a href="https://schoolflashcards5.github.io/retro-bowl-unblocked" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 13 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.b5-KggaPRTioUNh2mk2mEgHaEK?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Subway Surfers!</h3>
-                        <a href="https://schoolflashcards5.github.io/subway" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                
-                <!-- Game 2 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://wallpaperaccess.com/full/5720727.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Slither.IO!</h3>
-                        <a href="https://schoolflashcards5.github.io/slither-io" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 3 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/R.99388c093ab0db9347d6ecfd99370474?rik=2ISiCYnsT4GNOA&pid=ImgRaw&r=0');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Fruit Ninja!</h3>
-                        <a href="https://schoolflashcards5.github.io/fruit-ninja" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                
-                <!-- Game 4 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.sNzuFjc75su2lU5Pb5ZJvgHaEK?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Cookie Clicker!</h3>
-                        <a href="https://schoolflashcards5.github.io/cookieNEW/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 7 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://img.itch.zone/aW1nLzc1MzUxOTUucG5n/original/zQmEXl.png');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Bitcoin Clicker!</h3>
-                        <a href="https://schoolflashcards5.github.io/bitCoin_clicker/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 8 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://data2.1freewallpapers.com/download/flappy-bird-game-popular-1366x768.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Flappy Bird!</h3>
-                        <a href="https://schoolflashcards5.github.io/flappy-bird" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 1 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.nPuB55Mp95w18r3p7rSOjgHaD4?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Tiny Fishing!</h3>
-                        <a href="https://schoolflashcards5.github.io/tiny-fishing" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 9 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.FtKs5H6IkONNnA5qoyQNqwHaEK?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Slope 3!</h3>
-                        <a href="https://schoolflashcards5.github.io/slope3" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 10 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.NTFKPJqkEjic45gnivPLvQHaEK?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Aquapark.IO!</h3>
-                        <a href="https://schoolflashcards5.github.io/aquapark-io" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!-- Game 12 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://retrobowlcollege.io/data/image/screenshot-2023-11-23-105503.png');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Axis Football League!</h3>
-                        <a href="https://schoolflashcards5.github.io/axis-football-league" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 15 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.ZXvaWHcoqFPZcGo78fK9SQHaDk?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Crossy Road!</h3>
-                        <a href="https://schoolflashcards5.github.io/crossy-road" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-                
-                <!-- Game 16 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.ollyg9Yd7zX9DNtnkzsc-gHaEJ?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Basketball Legends!</h3>
-                        <a href="https://schoolflashcards5.github.io/basketball-legends" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!-- Game 17 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://th.bing.com/th/id/OIP.raV370_mlwudwsGzK28T0wHaEB?rs=1&pid=ImgDetMain');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Cut the Rope!</h3>
-                        <a href="https://schoolflashcards5.github.io/cut-the-rope" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                 <!-- Game 18 -->
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://www.metacritic.com/a/img/catalog/provider/6/12/6-1-635169-52.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Touchdowners!</h3>
-                        <a href="https://schoolflashcards5.github.io/touchdowners" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!-- Game 21-->                
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsjzNG5lORTCkfqc_yn7CEhCQP5aRZP9_OOA&s');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Truck Loader 4!</h3>
-                        <a href="https://schoolflashcards5.github.io/truck-loader-4/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                 <!-- Game 22-->                
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://is1-ssl.mzstatic.com/image/thumb/Purple123/v4/7d/a4/6a/7da46af9-4953-70c6-6f3c-25444de561c9/pr_source.png/643x0w.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">GunSpin!</h3>
-                        <a href="https://schoolflashcards5.github.io/gunspin/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-
-                <!-- Game 23-->                
-                <div class="game-card">
-                    <div class="game-image" style="background-image: url('https://www.coolmathgames.com/sites/default/files/CandyJump_OG-logo.jpg');"></div>
-                    <div class="game-info">
-                        <h3 class="game-title">Candy Jump!</h3>
-                        <a href="https://schoolflashcards5.github.io/candy-jump/" class="play-btn">Play Now</a>
-                    </div>
-                </div>
-				
-                <!-- Game 24-->                
-			<div class="game-card">
-                <div class="game-image" style="background-image: url('deltarune-heroes-blue-fire-aliqfub1bewvs4i5.jpg');"></div>
-                  <div class="game-info">
-                      <div style="display: flex; align-items: center; justify-content: space-between;">
-                      <h3 class="game-title">Deltarune!</h3>
-                      </div>
-                      <a href="https://schoolflashcards5.github.io/deltarune/" class="play-btn">Play Now</a>
-					</div>
-                </div>
-            	</section>
+            <div class="games-grid" id="gamesGrid">
+                <div class="status-msg">Loading games…</div>
+            </div>
+        	</section>
 
 			<!-- END GAMES -->
 				
-            </div>
         </div>
     </section>
     
@@ -1025,84 +569,117 @@ TO ADD A "NEW!" BADGE LATER:
         document.getElementById('cycleBrandBtn').addEventListener('click', cycleBranding);
     });
 </script>
-    
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const gameCards = document.querySelectorAll('.game-card');
-        const searchInputs = document.querySelectorAll('.search-bar input, .header-search input');
-        const searchButtons = document.querySelectorAll('.search-bar button, .header-search button');
-        const gamesGrid = document.querySelector('.games-grid');
-        
-        // Create no results message element
-        const noResultsMsg = document.createElement('div');
-        noResultsMsg.className = 'no-results';
-        noResultsMsg.textContent = 'No games found matching your search.';
-        noResultsMsg.style.display = 'none';
-        noResultsMsg.style.gridColumn = '1 / -1';
-        noResultsMsg.style.textAlign = 'center';
-        noResultsMsg.style.fontSize = '1.2em';
-        noResultsMsg.style.margin = '20px 0';
-        gamesGrid.appendChild(noResultsMsg);
 
-        function performSearch(query) {
-            query = query.trim().toLowerCase();
-            let hasResults = false;
-            
-            gameCards.forEach(card => {
-                const title = card.querySelector('.game-title').textContent.toLowerCase();
-                if (query === '' || title.includes(query)) {
-                    card.style.display = 'block';
-                    hasResults = true;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            if (!hasResults && query !== '') {
-                noResultsMsg.style.display = 'block';
-            } else {
-                noResultsMsg.style.display = 'none';
-            }
-        }
-        
-        searchButtons.forEach((button, index) => {
-            button.addEventListener('click', function() {
-                performSearch(searchInputs[index].value);
-            });
-        });
-        
-        searchInputs.forEach(input => {
-            input.addEventListener('keyup', function(e) {
-                performSearch(this.value);
-            });
-        });
-        
-        searchButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const input = this.parentElement.querySelector('input');
-                if (input.value.trim() === '') {
-                    performSearch('');
-                }
-            });
-        });
+<!-- ============================================================
+  FIREBASE + GAMES DATA/RENDERING
+  Reuses the same Firebase project as pinkgame, but a SEPARATE
+  Firestore document (site/sfc-games) so the two game lists stay
+  independent. Same idea as before: one document holding the whole
+  list, so loading this page costs a single Firestore read no matter
+  how many games are in it. Manage games from sfc-admin.html — you
+  can log in there with the same admin account you use for PinkGame.
+============================================================ -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
-        // Random Game Functionality - includes ALL games
-        const randomGameBtn = document.getElementById('randomGameBtn');
-        if (randomGameBtn) {
-            randomGameBtn.addEventListener('click', function() {
-                const gameLinks = Array.from(document.querySelectorAll('.play-btn'))
-                    .map(btn => btn.href);
-                
-                if (gameLinks.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * gameLinks.length);
-                    const randomGameUrl = gameLinks[randomIndex];
-                    window.open(randomGameUrl, '_blank');
-                } else {
-                    alert('No games available!');
-                }
-            });
-        }
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3jxwyH9Pws4nhIT9ScDffk5CpHa99oMM",
+    authDomain: "pinkgame-1d4bf.firebaseapp.com",
+    projectId: "pinkgame-1d4bf",
+    storageBucket: "pinkgame-1d4bf.firebasestorage.app",
+    messagingSenderId: "531941128309",
+    appId: "1:531941128309:web:82e55394c6f48666a3603c",
+    measurementId: "G-WF5YT7S04W"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  let allGames = [];
+  let searchTerm = '';
+
+  async function loadGames() {
+    const grid = document.getElementById('gamesGrid');
+    try {
+      const snap = await getDoc(doc(db, 'site', 'sfc-games'));
+      allGames = snap.exists() ? (snap.data().list || []) : [];
+    } catch (err) {
+      console.error('Failed to load games from Firestore:', err);
+      grid.innerHTML = '<div class="status-msg">Couldn\'t load games right now. Please refresh the page.</div>';
+      return;
+    }
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('gamesGrid');
+    const term = searchTerm.trim().toLowerCase();
+    const filtered = allGames.filter(g => (g.name || '').toLowerCase().includes(term));
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div class="status-msg">No games found matching your search.</div>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map(g => {
+      const badges = [
+        g.isNew ? '<span class="awardshii-btn">New! ✨</span>' : '',
+        g.isPop ? '<span class="hotgames-btn">Hot! 🔥</span>' : '',
+        g.isFixed ? '<span class="fixed-btn">Fixed 🔨</span>' : '',
+      ].join('');
+      return `
+        <div class="game-card">
+          <div class="game-image" style="background-image: url('${escapeHtml(g.img)}');"></div>
+          <div class="game-info">
+            <div class="game-info-top">
+              <h3 class="game-title">${escapeHtml(g.name)}</h3>
+              <div class="badges-row">${badges}</div>
+            </div>
+            <a href="${escapeHtml(g.url)}" class="play-btn" target="_blank" rel="noopener">Play Now</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function performSearch(query) {
+    searchTerm = query;
+    renderGrid();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInputs = document.querySelectorAll('.search-bar input, .header-search input');
+    const searchButtons = document.querySelectorAll('.search-bar button, .header-search button');
+
+    searchButtons.forEach((button, index) => {
+      button.addEventListener('click', () => performSearch(searchInputs[index].value));
     });
+    searchInputs.forEach(input => {
+      input.addEventListener('keyup', function () { performSearch(this.value); });
+    });
+
+    const randomGameBtn = document.getElementById('randomGameBtn');
+    if (randomGameBtn) {
+      randomGameBtn.addEventListener('click', () => {
+        const playable = allGames.filter(g => g.url && g.url.trim());
+        if (playable.length === 0) {
+          alert('No games available!');
+          return;
+        }
+        const pick = playable[Math.floor(Math.random() * playable.length)];
+        window.open(pick.url, '_blank');
+      });
+    }
+
+    loadGames();
+  });
 </script>
 </body>
 </html>
