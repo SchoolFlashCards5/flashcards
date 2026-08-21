@@ -18,7 +18,20 @@
   new project's config; everything else stays the same.
 
   Once logged in you can add, edit, and delete games. Changes show
-  up on the public games page the next time it's loaded.
+  up on the public games page the next time it's loaded. Games always
+  display NEW first, then FIXED, then HOT, then everything else —
+  that's fixed sort logic on the public page, not something you set
+  per game beyond checking the boxes.
+
+  Also manages the Markdown status banner (site/status) shown at the
+  top of the public games page, and includes a Google Images picker
+  for thumbnails (needs a one-time API key setup — see the comment
+  above the image-search code further down).
+
+  Also posts Discord notifications on game add/edit/delete and status
+  changes — replaces .github/workflows/discord-site-update.yml, which
+  can be deleted now (see the comment above DISCORD_WEBHOOK_URL further
+  down for why, and for the one-time setup needed here).
 ============================================================ -->
 
 <title>SchoolFlashCards5 — Admin</title>
@@ -69,7 +82,26 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   font-family: inherit; font-size: 15px; padding: 9px 12px;
   border-radius: 8px; outline: none; transition: border-color 0.2s;
 }
+.field textarea {
+  width: 100%; border: 2px solid #e2e2e2; color: var(--dark);
+  font-family: inherit; font-size: 15px; padding: 9px 12px;
+  border-radius: 8px; outline: none; transition: border-color 0.2s;
+  resize: vertical;
+}
+.field textarea:focus { border-color: var(--primary); }
 .field input:focus { border-color: var(--primary); }
+
+.panel-note { color: #888; font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+.panel-note code { background: #f2f2f2; padding: 1px 5px; border-radius: 4px; }
+
+.status-preview {
+  border: 2px dashed #e2e2e2; border-radius: 8px; padding: 14px;
+  color: red; font-weight: bold; min-height: 24px;
+}
+.status-preview a { color: red; }
+.status-preview p { margin: 6px 0; }
+.status-preview p:first-child { margin-top: 0; }
+.status-preview p:last-child { margin-bottom: 0; }
 
 .btn-primary {
   background: var(--button); border: none; color: white;
@@ -239,8 +271,9 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
               <button type="button" class="btn-search" id="imgSearchBtn">Search</button>
             </div>
             <div class="img-search-note">
-              Searches Wikimedia Commons (openly-licensed images) — good for general topics and
-              logos, thinner on commercial game art. You can still paste any direct image URL above.
+              Searches Google Images (needs a one-time API key setup — see the comment in the
+              file's script if results say "not set up yet"). You can still paste any direct
+              image URL above.
             </div>
             <div class="img-search-results" id="imgSearchResults"></div>
           </div>
@@ -266,6 +299,23 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     </div>
 
     <div class="panel">
+      <h2>Site Status</h2>
+      <p class="panel-note">This is the banner shown at the top of the games page (where the Discord notice used to be hardcoded). Supports Markdown — <code>**bold**</code>, <code>[links](https://...)</code>, lists, etc.</p>
+      <div class="field span-2">
+        <label>Status Message (Markdown)</label>
+        <textarea id="statusInput" rows="4" placeholder="e.g. **🔔 Update:** New games added! Join the [Discord](https://discord.gg/GnVUkcsfMw) for more."></textarea>
+      </div>
+      <div class="field span-2">
+        <label>Preview</label>
+        <div class="status-preview" id="statusPreview">Nothing set yet.</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="statusSaveBtn">Save Status</button>
+      </div>
+      <div class="save-msg" id="statusSaveMsg"></div>
+    </div>
+
+    <div class="panel">
       <h2>All Games</h2>
       <div class="list-toolbar">
         <input type="text" id="listSearch" placeholder="Filter by name..."/>
@@ -277,6 +327,9 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   </div>
 
 </main>
+
+<!-- Markdown rendering for the Site Status preview -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
@@ -301,6 +354,74 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   const auth = getAuth(app);
   const db = getFirestore(app);
   const DOC_REF = doc(db, 'site', 'sfc-games'); // separate document from PinkGame's site/games
+  const STATUS_REF = doc(db, 'site', 'status'); // the Markdown banner shown on the games page
+
+  // ── GOOGLE IMAGE SEARCH SETUP ────────────────────────────────
+  // Fill these in from Google Cloud Console (Custom Search JSON API)
+  // and programmablesearchengine.google.com. See the comment above
+  // the image search code further down for exact steps. Until these
+  // are filled in, the image search button will show a setup message
+  // instead of trying to search.
+  const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY';
+  const GOOGLE_CSE_ID = 'YOUR_SEARCH_ENGINE_ID';
+
+  // ── DISCORD NOTIFICATIONS ─────────────────────────────────────
+  // Replaces the old .github/workflows/discord-site-update.yml.
+  // That workflow diffed games.html between git commits — but games
+  // don't live in that file anymore, and saving a game here never
+  // creates a git commit at all (it's a direct Firestore write from
+  // the browser), so a GitHub Actions workflow has nothing to react
+  // to. This does the equivalent job from the place the change
+  // actually happens: right here, right after a save succeeds.
+  //
+  // Paste your existing webhook URL below (Discord server settings →
+  // Integrations → Webhooks → copy URL — the same value that was in
+  // your GitHub secret DISCORD_WEBHOOK_URL). You can delete the old
+  // .github/workflows/discord-site-update.yml file; it's inert now.
+  //
+  // SECURITY NOTE: same static-site caveat as the Google API key —
+  // this URL is visible to anyone who views this page's source.
+  // Unlike the Google key, a Discord webhook URL can't be domain-
+  // restricted — anyone with it can post to your channel. Keep this
+  // page's URL unlinked/private, and if it's ever abused, regenerate
+  // the webhook in Discord (Integrations → Webhooks → that webhook →
+  // "Regenerate") — that instantly kills the old URL and you paste
+  // the new one in here.
+  const DISCORD_WEBHOOK_URL = 'YOUR_DISCORD_WEBHOOK_URL';
+
+  async function postToDiscord(content) {
+    if (DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL') return; // not set up yet
+    try {
+      await fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+    } catch (err) {
+      // A failed notification shouldn't block or roll back the save —
+      // the game/status change already succeeded in Firestore.
+      console.error('Discord notification failed:', err);
+    }
+  }
+
+  function notifyGameChange(line) {
+    const who = auth.currentUser?.email || 'admin';
+    postToDiscord(
+      `**SchoolFlashCards5 updated**\n` +
+      `**By:** ${who}\n\n` +
+      `**Changes:**\n\`\`\`text\n${line}\n\`\`\`\n` +
+      `@here`
+    );
+  }
+
+  function notifyStatusChange(markdown) {
+    const who = auth.currentUser?.email || 'admin';
+    const body = markdown.trim() ? markdown.trim() : '_(status cleared)_';
+    postToDiscord(
+      `**SchoolFlashCards5 status updated**\n` +
+      `**By:** ${who}\n\n${body}\n\n@here`
+    );
+  }
 
   function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -334,6 +455,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       adminView.style.display = 'block';
       logoutBtn.style.display = 'inline-block';
       loadGamesList();
+      loadStatus();
     } else {
       loginView.style.display = 'block';
       adminView.style.display = 'none';
@@ -420,6 +542,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     saveBtn.disabled = true;
     try {
       let updatedList;
+      const wasEditing = !!editingId;
       if (editingId) {
         updatedList = allGames.map(g => g.id === editingId ? gameData : g);
         saveMsg.textContent = 'Game updated.';
@@ -430,6 +553,9 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       await saveGamesList(updatedList);
       saveMsg.className = 'save-msg ok';
       saveMsg.style.display = 'block';
+      notifyGameChange(wasEditing
+        ? `A game "${name}" has been updated.`
+        : `A game "${name}" has been added.`);
       resetForm();
       renderList();
     } catch (err) {
@@ -442,7 +568,26 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
   });
 
-  // ── IMAGE SEARCH (Wikimedia Commons — free, no API key needed) ───
+  // ── IMAGE SEARCH (Google Custom Search — Images) ──────────────
+  // Real Google Images results, but this needs two things set up first
+  // (both free to start):
+  //   1. A Custom Search Engine at programmablesearchengine.google.com
+  //      → create one, set it to search the entire web, turn on "Image
+  //        search" in its settings, then copy its Search engine ID.
+  //   2. An API key for the "Custom Search JSON API" at
+  //      console.cloud.google.com → APIs & Services → Credentials
+  //      → Create Credentials → API key. Enable the "Custom Search API"
+  //        for your project first (APIs & Services → Library).
+  // Paste both into GOOGLE_API_KEY / GOOGLE_CSE_ID near the top of this
+  // script. Free tier is 100 searches/day, then billed per query — set
+  // a daily quota cap in Cloud Console so it can't run up a bill.
+  //
+  // SECURITY NOTE: this key is visible to anyone who views this page's
+  // source (this is a static site — there's no server to hide it
+  // behind). Once you have the key, go to Cloud Console → Credentials
+  // → your key → "Set an application restriction" → HTTP referrers,
+  // and add your site's domain (e.g. schoolflashcards5.github.io/*).
+  // That stops the key from being usable from anywhere but your site.
   const imgSearchToggle = document.getElementById('imgSearchToggle');
   const imgSearchPanel = document.getElementById('imgSearchPanel');
   const imgSearchInput = document.getElementById('imgSearchInput');
@@ -468,32 +613,44 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   async function runImageSearch() {
     const term = imgSearchInput.value.trim();
     if (!term) return;
+
+    if (GOOGLE_API_KEY === 'YOUR_GOOGLE_API_KEY' || GOOGLE_CSE_ID === 'YOUR_SEARCH_ENGINE_ID') {
+      imgSearchResults.innerHTML = '<div class="img-search-status">Google image search isn\'t set up yet — see the comment above the image-search code in this file for the two things you need (API key + Search Engine ID). You can still paste any direct image URL above.</div>';
+      return;
+    }
+
     imgSearchResults.innerHTML = '<div class="img-search-status">Searching…</div>';
     try {
-      const url = 'https://commons.wikimedia.org/w/api.php?' + new URLSearchParams({
-        action: 'query', generator: 'search', gsrnamespace: '6',
-        gsrsearch: term, gsrlimit: '24', prop: 'imageinfo',
-        iiprop: 'url', iiurlwidth: '400', format: 'json', origin: '*'
+      const url = 'https://www.googleapis.com/customsearch/v1?' + new URLSearchParams({
+        key: GOOGLE_API_KEY, cx: GOOGLE_CSE_ID, q: term,
+        searchType: 'image', num: '10', safe: 'active'
       });
       const res = await fetch(url);
       const data = await res.json();
-      const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
-      const results = pages
-        .map(p => p.imageinfo && p.imageinfo[0])
-        .filter(info => info && (info.thumburl || info.url) && /\.(jpe?g|png|gif|webp)(\?|$)/i.test(info.thumburl || info.url));
 
+      if (data.error) {
+        console.error(data.error);
+        imgSearchResults.innerHTML = `<div class="img-search-status">Google API error: ${escapeHtml(data.error.message || 'unknown error')}</div>`;
+        return;
+      }
+
+      const results = (data.items || []).filter(item => item.link);
       if (results.length === 0) {
         imgSearchResults.innerHTML = '<div class="img-search-status">No image results — try a different search.</div>';
         return;
       }
 
-      imgSearchResults.innerHTML = results.map((info, i) =>
-        `<div class="img-result" data-i="${i}"><img src="${escapeHtml(info.thumburl || info.url)}" loading="lazy"></div>`
-      ).join('');
+      imgSearchResults.innerHTML = results.map((item, i) => {
+        const thumb = (item.image && item.image.thumbnailLink) || item.link;
+        return `<div class="img-result" data-i="${i}"><img src="${escapeHtml(thumb)}" loading="lazy"></div>`;
+      }).join('');
       imgSearchResults.querySelectorAll('.img-result').forEach(el => {
         el.addEventListener('click', () => {
-          const info = results[Number(el.dataset.i)];
-          fImg.value = info.thumburl || info.url;
+          const item = results[Number(el.dataset.i)];
+          // Use the (small, fast-loading) thumbnail as the saved image —
+          // it's plenty for a card thumbnail. Swap to item.link for the
+          // full-resolution original if you'd rather have that instead.
+          fImg.value = (item.image && item.image.thumbnailLink) || item.link;
           updatePreview();
           closeImgSearch();
         });
@@ -506,6 +663,54 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   imgSearchBtn.addEventListener('click', runImageSearch);
   imgSearchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); runImageSearch(); }
+  });
+
+  // ── SITE STATUS (Markdown banner shown on the games page) ──
+  const statusInput = document.getElementById('statusInput');
+  const statusPreview = document.getElementById('statusPreview');
+  const statusSaveBtn = document.getElementById('statusSaveBtn');
+  const statusSaveMsg = document.getElementById('statusSaveMsg');
+
+  function renderStatusPreview() {
+    const text = statusInput.value.trim();
+    if (!text) {
+      statusPreview.textContent = 'Nothing set yet.';
+      statusPreview.style.color = '#999';
+      statusPreview.style.fontWeight = 'normal';
+      return;
+    }
+    statusPreview.style.color = '';
+    statusPreview.style.fontWeight = '';
+    statusPreview.innerHTML = window.marked ? window.marked.parse(text) : escapeHtml(text);
+  }
+  statusInput.addEventListener('input', renderStatusPreview);
+
+  async function loadStatus() {
+    try {
+      const snap = await getDoc(STATUS_REF);
+      statusInput.value = snap.exists() ? (snap.data().markdown || '') : '';
+    } catch (err) {
+      console.error(err);
+    }
+    renderStatusPreview();
+  }
+
+  statusSaveBtn.addEventListener('click', async () => {
+    statusSaveBtn.disabled = true;
+    try {
+      await setDoc(STATUS_REF, { markdown: statusInput.value });
+      statusSaveMsg.textContent = 'Status saved — live on the games page now.';
+      statusSaveMsg.className = 'save-msg ok';
+      statusSaveMsg.style.display = 'block';
+      notifyStatusChange(statusInput.value);
+    } catch (err) {
+      console.error(err);
+      statusSaveMsg.textContent = 'Could not save — check your Firestore rules and connection.';
+      statusSaveMsg.className = 'save-msg err';
+      statusSaveMsg.style.display = 'block';
+    } finally {
+      statusSaveBtn.disabled = false;
+    }
   });
 
   // ── GAMES LIST ────────────────────────────────────────────
@@ -527,9 +732,18 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     renderList();
   }
 
+  function badgeTier(g) {
+    if (g.isNew) return 3;
+    if (g.isFixed) return 2;
+    if (g.isPop) return 1;
+    return 0;
+  }
+
   function renderList() {
     const listEl = document.getElementById('gamesList');
-    const filtered = allGames.filter(g => (g.name || '').toLowerCase().includes(listFilter));
+    const filtered = allGames
+      .filter(g => (g.name || '').toLowerCase().includes(listFilter))
+      .sort((a, b) => badgeTier(b) - badgeTier(a));
     document.getElementById('listCount').textContent = `${filtered.length} game${filtered.length === 1 ? '' : 's'}`;
 
     if (filtered.length === 0) {
@@ -590,6 +804,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       await saveGamesList(updatedList);
       if (editingId === id) resetForm();
       renderList();
+      notifyGameChange(`A game "${g.name}" has been removed.`);
     } catch (err) {
       console.error(err);
       alert('Could not delete — check your Firestore rules and connection.');
