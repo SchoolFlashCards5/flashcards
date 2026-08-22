@@ -409,19 +409,27 @@
         }
 
         /* Site status banner — content comes from sfc-admin.html's "Site Status"
-           panel and can include Markdown (bold, links, lists, etc). */
+           panel and can include Markdown (bold, links, lists, etc).
+           max-width + margin:auto centers the BOX itself (matching .hero p's
+           pattern above) — without it, text-align:center only centers text
+           inside a box that spans the full 1200px container, which looks
+           fine for one short line but ragged/off the moment it wraps. */
         .status-box {
+            max-width: 700px;
+            margin: 0 auto;
             font-family: "Comic Sans MS", cursive, sans-serif;
             color: red;
             font-weight: bold;
             font-size: 1em;
+            overflow-wrap: break-word;
         }
         .status-box a { color: red; text-decoration: underline; }
         .status-box p { margin: 6px 0; }
-        .status-box ul, .status-box ol { text-align: left; display: inline-block; margin: 6px 0; }
+        .status-box ul, .status-box ol { text-align: left; display: inline-block; margin: 6px auto; }
         .status-box code {
             background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 4px;
             font-family: inherit; font-weight: normal;
+            overflow-wrap: break-word;
         }
 
         /* Stack on mobile only */
