@@ -198,6 +198,28 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 
 .game-row { display: flex; align-items: center; gap: 14px; padding: 10px; border-bottom: 1px solid #eee; }
 .game-row:last-child { border-bottom: none; }
+
+.tier-header {
+  font-size: 12px; font-weight: bold; color: #999; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 14px 4px 6px;
+}
+.tier-header:first-child { padding-top: 4px; }
+
+.reorder-note {
+  background: #fff7e0; border: 1px solid #ffe6a3; color: #8a6a00;
+  font-size: 12px; font-weight: bold; padding: 8px 12px;
+  border-radius: 8px; margin-bottom: 10px;
+}
+
+.reorder-col { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.btn-reorder {
+  background: white; border: 2px solid #e2e2e2; color: #666;
+  width: 26px; height: 22px; border-radius: 5px; cursor: pointer;
+  font-size: 10px; line-height: 1; transition: all 0.15s;
+}
+.btn-reorder:hover:not(:disabled) { border-color: var(--primary); color: #1a8a80; }
+.btn-reorder:disabled { opacity: 0.25; cursor: not-allowed; }
+
 .row-thumb { width: 70px; height: 44px; border-radius: 6px; overflow: hidden; background: var(--primary); flex-shrink: 0; }
 .row-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .row-info { flex: 1; min-width: 0; }
@@ -387,7 +409,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   // the webhook in Discord (Integrations → Webhooks → that webhook →
   // "Regenerate") — that instantly kills the old URL and you paste
   // the new one in here.
-  const DISCORD_WEBHOOK_URL = 'DISCORD_WEBHOOK_URL';
+  const DISCORD_WEBHOOK_URL = 'YOUR_DISCORD_WEBHOOK_URL';
 
   async function postToDiscord(content) {
     if (DISCORD_WEBHOOK_URL === 'YOUR_DISCORD_WEBHOOK_URL') return; // not set up yet
@@ -544,9 +566,23 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       let updatedList;
       const wasEditing = !!editingId;
       if (editingId) {
+        // Editing never changes position — reordering is a separate,
+        // explicit action (the ▲▼ buttons in the list below).
         updatedList = allGames.map(g => g.id === editingId ? gameData : g);
         saveMsg.textContent = 'Game updated.';
+      } else if (badgeTier(gameData) === 0) {
+        // No badges: goes to the TOP of the untagged group (right under
+        // the last tagged game) instead of the very bottom of the whole list.
+        const firstUntaggedIdx = allGames.findIndex(g => badgeTier(g) === 0);
+        updatedList = [...allGames];
+        if (firstUntaggedIdx === -1) {
+          updatedList.push(gameData); // no untagged games yet — nothing to insert above
+        } else {
+          updatedList.splice(firstUntaggedIdx, 0, gameData);
+        }
+        saveMsg.textContent = 'Game added.';
       } else {
+        // Has a badge: appends to the end of its own tier group, same as before.
         updatedList = [...allGames, gameData];
         saveMsg.textContent = 'Game added.';
       }
@@ -614,7 +650,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     const term = imgSearchInput.value.trim();
     if (!term) return;
 
-    if (GOOGLE_API_KEY === 'AIzaSyC5_58CWqaxxOwBxLFGZ7n5ewINzRP-snY' || GOOGLE_CSE_ID === '45024ccd8393a4cb1') {
+    if (GOOGLE_API_KEY === 'YOUR_GOOGLE_API_KEY' || GOOGLE_CSE_ID === 'YOUR_SEARCH_ENGINE_ID') {
       imgSearchResults.innerHTML = '<div class="img-search-status">Google image search isn\'t set up yet — see the comment above the image-search code in this file for the two things you need (API key + Search Engine ID). You can still paste any direct image URL above.</div>';
       return;
     }
@@ -738,12 +774,42 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     if (g.isPop) return 1;
     return 0;
   }
+  const TIER_LABEL = { 3: '✨ New', 2: '🔨 Fixed', 1: '🔥 Hot', 0: 'Everything Else' };
+
+  // Moves a game earlier/later WITHIN its own tier group. Tier order
+  // itself (New > Fixed > Hot > everything else) is always fixed on
+  // the public page, so this only ever reorders games that share the
+  // same badge — moving "up" past a higher tier isn't a thing that
+  // exists, hence the buttons disable at tier boundaries.
+  async function moveGame(id, direction) {
+    const sorted = [...allGames].sort((a, b) => badgeTier(b) - badgeTier(a));
+    const i = sorted.findIndex(g => g.id === id);
+    if (i === -1) return;
+    const tier = badgeTier(sorted[i]);
+    const j = direction === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= sorted.length || badgeTier(sorted[j]) !== tier) return;
+
+    const idxA = allGames.findIndex(g => g.id === sorted[i].id);
+    const idxB = allGames.findIndex(g => g.id === sorted[j].id);
+    const updated = [...allGames];
+    [updated[idxA], updated[idxB]] = [updated[idxB], updated[idxA]];
+
+    try {
+      await saveGamesList(updated);
+      renderList();
+    } catch (err) {
+      console.error(err);
+      alert('Could not reorder — check your Firestore rules and connection.');
+    }
+  }
 
   function renderList() {
     const listEl = document.getElementById('gamesList');
-    const filtered = allGames
-      .filter(g => (g.name || '').toLowerCase().includes(listFilter))
-      .sort((a, b) => badgeTier(b) - badgeTier(a));
+    const sorted = [...allGames].sort((a, b) => badgeTier(b) - badgeTier(a));
+    const canReorder = !listFilter; // reordering against a filtered subset would be ambiguous
+    const filtered = listFilter
+      ? sorted.filter(g => (g.name || '').toLowerCase().includes(listFilter))
+      : sorted;
     document.getElementById('listCount').textContent = `${filtered.length} game${filtered.length === 1 ? '' : 's'}`;
 
     if (filtered.length === 0) {
@@ -751,14 +817,31 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       return;
     }
 
+    let lastTier = null;
     listEl.innerHTML = filtered.map(g => {
+      const tier = badgeTier(g);
+      const i = sorted.findIndex(x => x.id === g.id);
+      const canUp = canReorder && i > 0 && badgeTier(sorted[i - 1]) === tier;
+      const canDown = canReorder && i < sorted.length - 1 && badgeTier(sorted[i + 1]) === tier;
+
+      let header = '';
+      if (tier !== lastTier) {
+        header = `<div class="tier-header">${TIER_LABEL[tier]}</div>`;
+        lastTier = tier;
+      }
+
       const badges = [
         g.isNew ? '<span class="mini-badge new">NEW</span>' : '',
         g.isPop ? '<span class="mini-badge hot">HOT</span>' : '',
         g.isFixed ? '<span class="mini-badge fixed">FIXED</span>' : '',
       ].join('');
       return `
+      ${header}
       <div class="game-row">
+        <div class="reorder-col">
+          <button class="btn-reorder" data-id="${g.id}" data-dir="up" ${canUp ? '' : 'disabled'} title="Move up">▲</button>
+          <button class="btn-reorder" data-id="${g.id}" data-dir="down" ${canDown ? '' : 'disabled'} title="Move down">▼</button>
+        </div>
         <div class="row-thumb"><img src="${escapeHtml(g.img)}" loading="lazy"></div>
         <div class="row-info"><div class="row-name">${escapeHtml(g.name)}</div></div>
         <div class="row-badges">${badges}</div>
@@ -769,6 +852,13 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       </div>`;
     }).join('');
 
+    if (listFilter) {
+      listEl.insertAdjacentHTML('afterbegin', '<div class="reorder-note">Clear the search box to reorder games — reordering while filtered is disabled since it\'d be ambiguous.</div>');
+    }
+
+    listEl.querySelectorAll('.btn-reorder').forEach(btn =>
+      btn.addEventListener('click', () => moveGame(btn.dataset.id, btn.dataset.dir))
+    );
     listEl.querySelectorAll('.btn-edit').forEach(btn =>
       btn.addEventListener('click', () => startEdit(btn.dataset.id))
     );
