@@ -5,6 +5,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>SchoolFlashCards5 - World Records</title>
         <link rel="shortcut icon" href="logo.png" />
+
+        <!-- ============================================================
+          SCHOOLFLASHCARDS5 — sfc-wr.html (World Records)
+          The submission instructions, the record list, and the cheaters
+          callout all load from Firestore (site/wr) instead of being
+          hardcoded here. Manage all three from sfc-admin.html's
+          "World Records" tab — nothing here needs hand-editing anymore.
+        ============================================================ -->
+
         <style>
         :root {
             --primary: #4ECDC4;
@@ -14,7 +23,7 @@
             --light: #F7FFF7;
             --button: #FF6B6B;
         }
-        
+
         hr {
   			border: none; 
   			height: 3px; 
@@ -23,7 +32,6 @@
   			margin: 10px 0px;
 		}
 
-        
         * {
             margin: 0;
             padding: 0;
@@ -91,137 +99,7 @@
             text-align: center;
             color: white;
         }
-        
-        .hero h1 {
-            font-size: 42px;
-            margin-bottom: 15px;
-        }
-        
-        .hero p {
-            font-size: 18px;
-            max-width: 700px;
-            margin: 0 auto 25px;
-        }
-        
-        .search-bar {
-            max-width: 500px;
-            margin: 0 auto;
-            position: relative;
-        }
-        
-        .search-bar input {
-            width: 100%;
-            padding: 12px 20px;
-            border-radius: 30px;
-            border: none;
-            font-size: 16px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .search-bar button {
-            position: absolute;
-            right: 5px;
-            top: 5px;
-            background-color: var(--button);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            cursor: pointer;
-        }
-        
-        .games-section {
-            padding: 40px 0;
-        }
-        
-        .section-title {
-            text-align: center;
-            margin-bottom: 30px;
-            color: var(--dark);
-            font-size: 32px;
-        }
-        
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 25px;
-        }
-        
-        .game-card {
-            background-color: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .game-image {
-            height: 150px;
-            background-color: var(--secondary);
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .game-info {
-            padding: 15px;
-        }
-        
-        .game-title {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: var(--dark);
-        }
-        
-        .game-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .play-btn {
-            display: inline-block;
-            background-color: var(--button);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        
-        .play-btn:hover {
-            background-color: #ff5252;
-        }
-        
-        .categories {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .category-btn {
-            background-color: white;
-            border: 2px solid var(--secondary);
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .category-btn:hover, .category-btn.active {
-            background-color: var(--secondary);
-            color: white;
-        }
-        
+
         footer {
             background-color: var(--dark);
             color: white;
@@ -229,25 +107,33 @@
             text-align: center;
         }
         
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        
-        .footer-links a {
-            color: white;
-            margin: 0 15px;
-            text-decoration: none;
-        }
-        
-        .footer-links a:hover {
-            text-decoration: underline;
-        }
-        
         .copyright {
             font-size: 14px;
             color: #aaa;
+        }
+
+        /* ── WR CONTENT (was a bare <center> tag before) ────────── */
+        .wr-content {
+            text-align: center;
+            padding: 20px;
+        }
+        .wr-content h1.wr-welcome { font-size: 40px; margin-bottom: 30px; }
+        .wr-content h1.wr-title { font-size: 70px; font-family: verdana; margin-bottom: 20px; }
+
+        /* Submission instructions — admin-editable Markdown */
+        .wr-intro {
+            font-size: 15px; font-family: verdana; max-width: 800px;
+            margin: 0 auto; line-height: 1.6;
+        }
+        .wr-intro a { color: var(--dark); }
+        .wr-intro p { margin: 8px 0; }
+
+        .wr-records { margin-top: 10px; }
+        .wr-records h2 { font-family: 'Comic Sans MS'; margin: 14px 0; }
+        .status-msg { color: #999; font-size: 1.1em; padding: 20px 0; }
+
+        .wr-cheaters {
+            font-family: 'Comic Sans MS'; color: red; margin-top: 20px; display: none;
         }
         
         @media (max-width: 768px) {
@@ -258,10 +144,7 @@
             nav ul {
                 margin-top: 15px;
             }
-            
-            .games-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            }
+            .wr-content h1.wr-title { font-size: 46px; }
         }
     </style>
     </head>
@@ -295,40 +178,94 @@
                 </h4>
             </div>
         </section>
-        <center>
-            <h1 style="font-size: 40px">Welcome To SchoolFlashCards5 WR page!</h1>
-            <br><br>
-            <h1 style="font-size: 70px; font-family: verdana">World
-                Records↓</h1>
-            <h3 style="font-size: 15px; font-family: verdana">If you want to
+
+        <div class="wr-content">
+            <h1 class="wr-welcome">Welcome To SchoolFlashCards5 WR page!</h1>
+            <h1 class="wr-title">World Records↓</h1>
+
+            <div class="wr-intro" id="wrIntro">
+                If you want to
                 have your record on here, join the <a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a> or email (slower response time)
-                31detzac@hayward.k12.wi.us with your new best/best screen, along with tabs and url showing. (email schoolflashcardsgh@gmail.com or use <a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a> if you are at home) 
-                <br>
+                31detzac@hayward.k12.wi.us with your new best/best screen, along with tabs and url showing. (email schoolflashcardsgh@gmail.com or use <a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a> if you are at home)
+            </div>
 
-                <!---->
-                <hr>
-                <!---->
+            <hr>
 
-                <br>
-                <h2 style="font-family: Comic Sans MS">Carter  Fromell - 157 in Candy Jump</h2><br>
-                <h2 style="font-family: Comic Sans MS">Wesley Johnson - 476 in Crossy Road</h2><br>
-                <h2 style="font-family: Comic Sans MS">Feather Henry - 1 in Fruit Ninja.</h2><br>
-                <h2 style="font-family: Comic Sans MS">Jayson Heynkel - 988,989 in Subway Surfers</h2><br>
-                <h2 style="font-family: Comic Sans MS">Colt Achtor - 136 in Flappy Bird</h2><br>
-                <h2 style="font-family: Comic Sans MS">Jayson Henkel - First to complete all cardboard box levels, with three stars, in Cut the Rope</h2><br>
-                <h2 style="font-family: Comic Sans MS">Evan Grahn - 227 in Slope</h2><br>
-                <h2 style="font-family: Comic Sans MS">Ryerson Poquette - 8192 brick in 2048</h2><br>
-                <h2 style="font-family: Comic Sans MS">Charles Seeger - 266 in Snow Rider 3D.</h2><br>
-                <h2 style="font-family: Comic Sans MS">Rylan Begay-Beaulieu - 9,197 meters in Jetpack Joyride</h2><br>
-				<h2 style="font-family: Comic Sans MS">Benjamin St. Germaine - First to get every single box 3 stars on cut the rope (UNBEATABLE)</h2><br>
-                <h2 style="font-family: Comic Sans MS">Kaieden Shearin - First to bet OvO all levels with all coins (UNBEATABLE)</h2>
-                <h2 style="font-family: Comic Sans MS">Zachary D - Expert Mode Minesweeper completed in 291 seconds</h2>
-                <!--frick you colt-->
-                <h4 style="font-family: Comic Sans MS; color: red">Cheaters: Colt Achtor, Jayelon Olson, Wyatt Harvey</h4>
+            <div class="wr-records" id="wrRecords">
+                <div class="status-msg">Loading records…</div>
+            </div>
 
-                <br>
-                <footer>
-                    <div class="container">
-                        <p class="copyright">© 2026 SchoolFlashCards5. EKFun, jaysoninthesubway, and PinkGame are affiliates of SchoolFlashCard5.™</p>
-                    </div>
-                </footer>
+            <h4 class="wr-cheaters" id="wrCheaters"></h4>
+        </div>
+
+        <footer>
+            <div class="container">
+                <p class="copyright">© 2026 SchoolFlashCards5. EKFun, jaysoninthesubway, and PinkGame are affiliates of SchoolFlashCard5.™</p>
+            </div>
+        </footer>
+
+<!-- Markdown rendering for the submission-instructions box -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3jxwyH9Pws4nhIT9ScDffk5CpHa99oMM",
+    authDomain: "pinkgame-1d4bf.firebaseapp.com",
+    projectId: "pinkgame-1d4bf",
+    storageBucket: "pinkgame-1d4bf.firebasestorage.app",
+    messagingSenderId: "531941128309",
+    appId: "1:531941128309:web:82e55394c6f48666a3603c",
+    measurementId: "G-WF5YT7S04W"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  async function loadWrData() {
+    try {
+      const snap = await getDoc(doc(db, 'site', 'wr'));
+      const data = snap.exists() ? snap.data() : {};
+
+      // Submission instructions — falls back to the text already sitting
+      // in the HTML if nothing's been set in the admin panel yet.
+      const intro = (data.intro || '').trim();
+      if (intro) {
+        const introBox = document.getElementById('wrIntro');
+        introBox.innerHTML = window.marked ? window.marked.parse(intro) : escapeHtml(intro);
+      }
+
+      // Records
+      const records = data.records || [];
+      const recordsBox = document.getElementById('wrRecords');
+      if (records.length > 0) {
+        recordsBox.innerHTML = records.map(r => `<h2>${escapeHtml(r)}</h2>`).join('');
+      } else {
+        recordsBox.innerHTML = '<div class="status-msg">No records yet — be the first!</div>';
+      }
+
+      // Cheaters callout — hidden entirely if empty
+      const cheaters = (data.cheaters || '').trim();
+      const cheatersBox = document.getElementById('wrCheaters');
+      if (cheaters) {
+        cheatersBox.textContent = `Cheaters: ${cheaters}`;
+        cheatersBox.style.display = 'block';
+      }
+    } catch (err) {
+      console.error('Failed to load World Records:', err);
+      document.getElementById('wrRecords').innerHTML = '<div class="status-msg">Couldn\'t load records right now. Please refresh the page.</div>';
+    }
+  }
+
+  loadWrData();
+</script>
+    </body>
+</html>
