@@ -7,31 +7,39 @@
 <!-- ============================================================
   SCHOOLFLASHCARDS5 — sfc-admin.html
 
-  Admin panel for the SchoolFlashCards5 game list. Not linked from
-  the public site on purpose — bookmark this page's URL.
+  Admin panel for SchoolFlashCards5. Not linked from the public site
+  on purpose — bookmark this page's URL.
 
-  This reuses the SAME Firebase project as PinkGame's admin panel
-  (so the same login you created there works here too), but reads
-  and writes a SEPARATE document — site/sfc-games — so the two
-  game lists never mix. If you'd rather keep this on a completely
-  separate Firebase project, swap the firebaseConfig below for a
-  new project's config; everything else stays the same.
+  Reuses the SAME Firebase project as PinkGame's admin panel (same
+  login works here), but its own documents so nothing mixes:
+    site/sfc-games  — the game list
+    site/status     — the Markdown status banner on the games page
+    site/wr         — the World Records page content
 
-  Once logged in you can add, edit, and delete games. Changes show
-  up on the public games page the next time it's loaded. Games always
-  display NEW first, then FIXED, then HOT, then everything else —
-  that's fixed sort logic on the public page, not something you set
-  per game beyond checking the boxes.
+  TWO TABS:
+    🎮 Games          — add/edit/delete games (one at a time or in
+                        bulk), reorder them, and set the status banner
+    🏆 World Records  — edit the submission instructions, the list of
+                        records, and the cheaters callout
 
-  Also manages the Markdown status banner (site/status) shown at the
-  top of the public games page, and includes a Google Images picker
-  for thumbnails (needs a one-time API key setup — see the comment
-  above the image-search code further down).
+  GAME ORDERING RULES (fixed, not something you configure per game):
+    - Games always display NEW > FIXED > HOT > everything else,
+      no matter what order they're stored in.
+    - The ▲▼⤒ buttons in the games list only reorder within a game's
+      own tier — you can't manually rank a Hot game above a New one,
+      since tier always wins on the public page.
+    - A new game with NO badges is inserted at the TOP of the
+      "everything else" group, not the bottom of the whole list.
+    - Editing an existing game to REMOVE its last badge moves it to
+      that same top-of-untagged spot too, rather than leaving it
+      wherever it happened to be sitting (which — since tagged games
+      originally get added at the end of their tier — used to mean it
+      fell to the very bottom once it lost its badge).
 
-  Also posts Discord notifications on game add/edit/delete and status
-  changes — replaces .github/workflows/discord-site-update.yml, which
-  can be deleted now (see the comment above DISCORD_WEBHOOK_URL further
-  down for why, and for the one-time setup needed here).
+  Also includes a Google Images picker for thumbnails (needs a
+  one-time API key setup — see the comment above the image-search
+  code further down) and posts Discord notifications on game/status
+  changes (see the comment above DISCORD_WEBHOOK_URL further down).
 ============================================================ -->
 
 <title>SchoolFlashCards5 — Admin</title>
@@ -117,8 +125,18 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   border-radius: 8px; margin-bottom: 14px; display: none;
 }
 
-/* ── DASHBOARD ─────────────────────────────────────────── */
+/* ── TABS ──────────────────────────────────────────────── */
 #adminView { display: none; }
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.tab-btn {
+  background: white; border: 2px solid #e2e2e2; color: #888;
+  font-family: inherit; font-weight: bold; font-size: 15px;
+  padding: 10px 22px; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+}
+.tab-btn.active { background: var(--dark); border-color: var(--dark); color: var(--accent); }
+.tab-btn:hover:not(.active) { border-color: var(--primary); color: var(--dark); }
+
+/* ── PANELS ────────────────────────────────────────────── */
 .panel {
   background: white; border-radius: 12px; padding: 26px;
   margin-bottom: 26px; box-shadow: 0 3px 14px rgba(0,0,0,0.07);
@@ -187,6 +205,51 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 .save-msg.ok { color: #1a8a4a; }
 .save-msg.err { color: var(--danger); }
 
+/* ── ADD ONE / ADD MULTIPLE TOGGLE ─────────────────────── */
+.add-mode-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+.mode-btn {
+  background: #f2f2f2; border: 2px solid #e2e2e2; color: #888;
+  font-family: inherit; font-weight: bold; font-size: 13px;
+  padding: 7px 16px; border-radius: 20px; cursor: pointer; transition: all 0.15s;
+}
+.mode-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+/* ── BULK ADD ──────────────────────────────────────────── */
+.bulk-note { color: #888; font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+.bulk-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 2px solid #eee; border-radius: 10px; padding: 12px; margin-bottom: 10px;
+}
+.bulk-row-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bulk-row-fields input {
+  border: 2px solid #e2e2e2; color: var(--dark); font-family: inherit;
+  font-size: 14px; padding: 8px 10px; border-radius: 6px; outline: none;
+}
+.bulk-row-fields input:focus { border-color: var(--primary); }
+.bulk-row-fields input.bulk-name, .bulk-row-fields input.bulk-url, .bulk-row-fields input.bulk-img { grid-column: 1 / -1; }
+.bulk-badges { grid-column: 1 / -1; display: flex; gap: 16px; flex-wrap: wrap; }
+.bulk-badges label { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: bold; color: #666; cursor: pointer; }
+.bulk-remove-row {
+  flex-shrink: 0; width: 28px; height: 28px; background: white; border: 2px solid #e2e2e2;
+  color: #999; border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+.bulk-remove-row:hover { border-color: var(--danger); color: var(--danger); }
+.btn-secondary {
+  background: white; border: 2px dashed #ccc; color: #777;
+  font-family: inherit; font-weight: bold; font-size: 14px;
+  padding: 10px 18px; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 12px;
+}
+.btn-secondary:hover { border-color: var(--primary); color: var(--dark); }
+
+/* ── BELL TOGGLE ───────────────────────────────────────── */
+.bell-toggle { display: flex; gap: 8px; }
+.bell-btn {
+  background: #f2f2f2; border: 2px solid #e2e2e2; color: #888;
+  font-family: inherit; font-weight: bold; font-size: 14px;
+  padding: 9px 18px; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+}
+.bell-btn.active { background: var(--dark); border-color: var(--dark); color: var(--accent); }
+
 /* ── GAMES LIST ────────────────────────────────────────── */
 .list-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .list-toolbar input {
@@ -214,9 +277,10 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 .reorder-col { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
 .btn-reorder {
   background: white; border: 2px solid #e2e2e2; color: #666;
-  width: 26px; height: 22px; border-radius: 5px; cursor: pointer;
+  width: 26px; height: 20px; border-radius: 5px; cursor: pointer;
   font-size: 10px; line-height: 1; transition: all 0.15s;
 }
+.btn-reorder.top-btn { font-size: 9px; }
 .btn-reorder:hover:not(:disabled) { border-color: var(--primary); color: #1a8a80; }
 .btn-reorder:disabled { opacity: 0.25; cursor: not-allowed; }
 
@@ -239,6 +303,15 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 .row-actions .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
 
 .empty-note, .loading-note { color: #999; font-size: 14px; text-align: center; padding: 26px 0; }
+
+/* ── WORLD RECORDS TAB ─────────────────────────────────── */
+.wr-record-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+.wr-record-row:last-child { border-bottom: none; }
+.wr-record-input {
+  flex: 1; border: 2px solid #e2e2e2; color: var(--dark); font-family: inherit;
+  font-size: 14px; padding: 8px 10px; border-radius: 6px; outline: none;
+}
+.wr-record-input:focus { border-color: var(--primary); }
 </style>
 </head>
 <body>
@@ -268,89 +341,175 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 
   <div id="adminView">
 
-    <div class="panel">
-      <h2 id="formTitle">Add A Game</h2>
-      <div class="form-grid">
-        <div class="field span-2">
-          <label>Name *</label>
-          <input type="text" id="fName" placeholder="e.g. BTD4!"/>
+    <div class="tabs">
+      <button class="tab-btn active" id="tabGamesBtn" data-tab="games">🎮 Games</button>
+      <button class="tab-btn" id="tabWrBtn" data-tab="wr">🏆 World Records</button>
+    </div>
+
+    <!-- ============================================================
+      GAMES TAB
+    ============================================================ -->
+    <div class="tab-panel" id="tab-games">
+
+      <div class="panel">
+        <h2 id="formTitle">Add A Game</h2>
+
+        <div class="add-mode-toggle">
+          <button type="button" class="mode-btn active" id="modeOneBtn">Add One</button>
+          <button type="button" class="mode-btn" id="modeMultiBtn">Add Multiple</button>
         </div>
 
-        <div class="field span-2">
-          <label>Game URL *</label>
-          <input type="url" id="fUrl" placeholder="https://..."/>
-        </div>
-
-        <div class="field span-2">
-          <label>Thumbnail Image URL *</label>
-          <div class="input-with-btn">
-            <input type="url" id="fImg" placeholder="https://..."/>
-            <button type="button" class="picker-toggle-btn" id="imgSearchToggle" title="Search for an image">🔍</button>
-          </div>
-          <div class="img-search-panel" id="imgSearchPanel">
-            <div class="img-search-bar">
-              <input type="text" id="imgSearchInput" placeholder="Search images… e.g. tower defense"/>
-              <button type="button" class="btn-search" id="imgSearchBtn">Search</button>
+        <!-- SINGLE ADD / EDIT FORM -->
+        <div id="singleAddForm">
+          <div class="form-grid">
+            <div class="field span-2">
+              <label>Name *</label>
+              <input type="text" id="fName" placeholder="e.g. BTD4!"/>
             </div>
-            <div class="img-search-note">
-              Searches Google Images (needs a one-time API key setup — see the comment in the
-              file's script if results say "not set up yet"). You can still paste any direct
-              image URL above.
+
+            <div class="field span-2">
+              <label>Game URL *</label>
+              <input type="url" id="fUrl" placeholder="https://..."/>
             </div>
-            <div class="img-search-results" id="imgSearchResults"></div>
+
+            <div class="field span-2">
+              <label>Thumbnail Image URL *</label>
+              <div class="input-with-btn">
+                <input type="url" id="fImg" placeholder="https://..."/>
+                <button type="button" class="picker-toggle-btn" id="imgSearchToggle" title="Search for an image">🔍</button>
+              </div>
+              <div class="img-search-panel" id="imgSearchPanel">
+                <div class="img-search-bar">
+                  <input type="text" id="imgSearchInput" placeholder="Search images… e.g. tower defense"/>
+                  <button type="button" class="btn-search" id="imgSearchBtn">Search</button>
+                </div>
+                <div class="img-search-note">
+                  Searches Google Images (needs a one-time API key setup — see the comment in the
+                  file's script if results say "not set up yet"). You can still paste any direct
+                  image URL above.
+                </div>
+                <div class="img-search-results" id="imgSearchResults"></div>
+              </div>
+            </div>
+
+            <div class="field span-2">
+              <label>Preview</label>
+              <div class="thumb-preview" id="thumbPreview">No image yet</div>
+            </div>
+
+            <div class="field span-2 checkbox-row">
+              <label><input type="checkbox" id="fNew"/> New! ✨</label>
+              <label><input type="checkbox" id="fPop"/> Hot! 🔥</label>
+              <label><input type="checkbox" id="fFixed"/> Fixed 🔨</label>
+            </div>
           </div>
+
+          <div class="form-actions">
+            <button class="btn-primary" id="saveBtn">Add Game</button>
+            <button class="btn-cancel" id="cancelBtn">Cancel Edit</button>
+          </div>
+          <div class="save-msg" id="saveMsg"></div>
         </div>
 
+        <!-- BULK ADD FORM -->
+        <div id="bulkAddForm" style="display:none;">
+          <p class="bulk-note">Fill in as many rows as you want and submit them together. No image search here — paste direct image URLs, or use "Add One" above if you want the search picker. Empty rows are ignored.</p>
+          <div id="bulkRows"></div>
+          <button type="button" class="btn-secondary" id="bulkAddRowBtn">+ Add Another Game</button>
+          <div class="form-actions">
+            <button class="btn-primary" id="bulkSubmitBtn">Submit All Games</button>
+          </div>
+          <div class="save-msg" id="bulkSaveMsg"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Site Status</h2>
+        <p class="panel-note">This is the banner shown at the top of the games page. Supports Markdown — <code>**bold**</code>, <code>[links](https://...)</code>, lists, etc. Pick 🔔 or 🔕 below and it's automatically added to the start and end for you — no need to type it yourself.</p>
+        <div class="field span-2">
+          <label>Notification Icon</label>
+          <div class="bell-toggle">
+            <button type="button" class="bell-btn active" id="bellOnBtn">🔔 Updates</button>
+            <button type="button" class="bell-btn" id="bellOffBtn">🔕 No Updates</button>
+          </div>
+        </div>
+        <div class="field span-2">
+          <label>Status Message (Markdown)</label>
+          <textarea id="statusInput" rows="4" placeholder="e.g. Update: New games added! Join the [Discord](https://discord.gg/GnVUkcsfMw) for more."></textarea>
+        </div>
         <div class="field span-2">
           <label>Preview</label>
-          <div class="thumb-preview" id="thumbPreview">No image yet</div>
+          <div class="status-preview" id="statusPreview">Nothing set yet.</div>
         </div>
-
-        <div class="field span-2 checkbox-row">
-          <label><input type="checkbox" id="fNew"/> New! ✨</label>
-          <label><input type="checkbox" id="fPop"/> Hot! 🔥</label>
-          <label><input type="checkbox" id="fFixed"/> Fixed 🔨</label>
+        <div class="form-actions">
+          <button class="btn-primary" id="statusSaveBtn">Save Status</button>
         </div>
+        <div class="save-msg" id="statusSaveMsg"></div>
       </div>
 
-      <div class="form-actions">
-        <button class="btn-primary" id="saveBtn">Add Game</button>
-        <button class="btn-cancel" id="cancelBtn">Cancel Edit</button>
+      <div class="panel">
+        <h2>All Games</h2>
+        <div class="list-toolbar">
+          <input type="text" id="listSearch" placeholder="Filter by name..."/>
+          <span class="count-pill" id="listCount">0 games</span>
+        </div>
+        <div id="gamesList"><div class="loading-note">Loading games…</div></div>
       </div>
-      <div class="save-msg" id="saveMsg"></div>
+
     </div>
 
-    <div class="panel">
-      <h2>Site Status</h2>
-      <p class="panel-note">This is the banner shown at the top of the games page (where the Discord notice used to be hardcoded). Supports Markdown — <code>**bold**</code>, <code>[links](https://...)</code>, lists, etc.</p>
-      <div class="field span-2">
-        <label>Status Message (Markdown)</label>
-        <textarea id="statusInput" rows="4" placeholder="e.g. **🔔 Update:** New games added! Join the [Discord](https://discord.gg/GnVUkcsfMw) for more."></textarea>
-      </div>
-      <div class="field span-2">
-        <label>Preview</label>
-        <div class="status-preview" id="statusPreview">Nothing set yet.</div>
-      </div>
-      <div class="form-actions">
-        <button class="btn-primary" id="statusSaveBtn">Save Status</button>
-      </div>
-      <div class="save-msg" id="statusSaveMsg"></div>
-    </div>
+    <!-- ============================================================
+      WORLD RECORDS TAB
+    ============================================================ -->
+    <div class="tab-panel" id="tab-wr" style="display:none;">
 
-    <div class="panel">
-      <h2>All Games</h2>
-      <div class="list-toolbar">
-        <input type="text" id="listSearch" placeholder="Filter by name..."/>
-        <span class="count-pill" id="listCount">0 games</span>
+      <div class="panel">
+        <h2>Submission Instructions</h2>
+        <p class="panel-note">Shown near the top of the World Records page (the "if you want your record on here..." text). Supports Markdown.</p>
+        <div class="field span-2">
+          <textarea id="wrIntroInput" rows="4"></textarea>
+        </div>
+        <div class="field span-2">
+          <label>Preview</label>
+          <div class="status-preview" id="wrIntroPreview">Nothing set yet.</div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="wrIntroSaveBtn">Save Instructions</button>
+        </div>
+        <div class="save-msg" id="wrIntroSaveMsg"></div>
       </div>
-      <div id="gamesList"><div class="loading-note">Loading games…</div></div>
+
+      <div class="panel">
+        <h2>Records</h2>
+        <div class="field span-2">
+          <label>Add a Record</label>
+          <div class="input-with-btn">
+            <input type="text" id="wrNewRecordInput" placeholder="e.g. Jane Doe - 500 in Flappy Bird"/>
+            <button type="button" class="btn-search" id="wrAddRecordBtn">Add</button>
+          </div>
+        </div>
+        <div id="wrRecordsList"><div class="loading-note">Loading records…</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>Cheaters List</h2>
+        <p class="panel-note">Shown at the bottom of the World Records page in red. Leave blank to hide it entirely.</p>
+        <div class="field span-2">
+          <input type="text" id="wrCheatersInput" placeholder="Name One, Name Two"/>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="wrCheatersSaveBtn">Save Cheaters List</button>
+        </div>
+        <div class="save-msg" id="wrCheatersSaveMsg"></div>
+      </div>
+
     </div>
 
   </div>
 
 </main>
 
-<!-- Markdown rendering for the Site Status preview -->
+<!-- Markdown rendering for the status/intro previews -->
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 
 <script type="module">
@@ -375,8 +534,9 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const DOC_REF = doc(db, 'site', 'sfc-games'); // separate document from PinkGame's site/games
-  const STATUS_REF = doc(db, 'site', 'status'); // the Markdown banner shown on the games page
+  const DOC_REF = doc(db, 'site', 'sfc-games');   // the game list
+  const STATUS_REF = doc(db, 'site', 'status');   // Markdown banner on the games page
+  const WR_REF = doc(db, 'site', 'wr');           // World Records page content
 
   // ── GOOGLE IMAGE SEARCH SETUP ────────────────────────────────
   // Fill these in from Google Cloud Console (Custom Search JSON API)
@@ -421,24 +581,24 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       });
     } catch (err) {
       // A failed notification shouldn't block or roll back the save —
-      // the game/status change already succeeded in Firestore.
+      // the change already succeeded in Firestore.
       console.error('Discord notification failed:', err);
     }
   }
 
-  function notifyGameChange(line) {
+  function notifyGameChange(lines) {
     const who = auth.currentUser?.email || 'admin';
     postToDiscord(
       `**SchoolFlashCards5 updated**\n` +
       `**By:** ${who}\n\n` +
-      `**Changes:**\n\`\`\`text\n${line}\n\`\`\`\n` +
+      `**Changes:**\n\`\`\`text\n${lines}\n\`\`\`\n` +
       `@here`
     );
   }
 
-  function notifyStatusChange(markdown) {
+  function notifyStatusChange(wrappedText) {
     const who = auth.currentUser?.email || 'admin';
-    const body = markdown.trim() ? markdown.trim() : '_(status cleared)_';
+    const body = wrappedText || '_(status cleared)_';
     postToDiscord(
       `**SchoolFlashCards5 status updated**\n` +
       `**By:** ${who}\n\n${body}\n\n@here`
@@ -478,6 +638,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       logoutBtn.style.display = 'inline-block';
       loadGamesList();
       loadStatus();
+      loadWrData();
     } else {
       loginView.style.display = 'block';
       adminView.style.display = 'none';
@@ -485,7 +646,27 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
   });
 
-  // ── FORM STATE ────────────────────────────────────────────
+  // ── TABS ──────────────────────────────────────────────────
+  function activateTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('tab-games').style.display = tab === 'games' ? 'block' : 'none';
+    document.getElementById('tab-wr').style.display = tab === 'wr' ? 'block' : 'none';
+  }
+  document.querySelectorAll('.tab-btn').forEach(btn =>
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab))
+  );
+
+  // ── ADD ONE / ADD MULTIPLE MODE ────────────────────────────
+  function activateAddMode(mode) {
+    document.getElementById('modeOneBtn').classList.toggle('active', mode === 'one');
+    document.getElementById('modeMultiBtn').classList.toggle('active', mode === 'multi');
+    document.getElementById('singleAddForm').style.display = mode === 'one' ? 'block' : 'none';
+    document.getElementById('bulkAddForm').style.display = mode === 'multi' ? 'block' : 'none';
+  }
+  document.getElementById('modeOneBtn').addEventListener('click', () => activateAddMode('one'));
+  document.getElementById('modeMultiBtn').addEventListener('click', () => activateAddMode('multi'));
+
+  // ── GAME FORM STATE ─────────────────────────────────────────
   // All games are stored as ONE array in ONE Firestore document
   // (site/sfc-games, field "list"). Every add/edit/delete here reads
   // the whole list into memory, changes it, and writes it all back.
@@ -500,6 +681,38 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   async function saveGamesList(updatedList) {
     await setDoc(DOC_REF, { list: updatedList });
     allGames = updatedList;
+  }
+
+  function badgeTier(g) {
+    if (g.isNew) return 3;
+    if (g.isFixed) return 2;
+    if (g.isPop) return 1;
+    return 0;
+  }
+  const TIER_LABEL = { 3: '✨ New', 2: '🔨 Fixed', 1: '🔥 Hot', 0: 'Everything Else' };
+
+  // Inserts one or more brand-new games into `list`, preserving their
+  // relative order: untagged ones go together at the TOP of the
+  // untagged group, tagged ones go together at the very end (which —
+  // since tier sort always wins on the public page — puts each at the
+  // end of its own tier group). Shared by single-add, bulk-add, and
+  // the "removed its last badge" repositioning in the edit flow.
+  function insertNewGames(list, newGamesInOrder) {
+    const untagged = newGamesInOrder.filter(g => badgeTier(g) === 0);
+    const tagged = newGamesInOrder.filter(g => badgeTier(g) !== 0);
+    let updated = [...list];
+    if (untagged.length > 0) {
+      const firstUntaggedIdx = updated.findIndex(g => badgeTier(g) === 0);
+      if (firstUntaggedIdx === -1) {
+        updated.push(...untagged);
+      } else {
+        updated.splice(firstUntaggedIdx, 0, ...untagged);
+      }
+    }
+    if (tagged.length > 0) {
+      updated.push(...tagged);
+    }
+    return updated;
   }
 
   const fName = document.getElementById('fName');
@@ -566,24 +779,22 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       let updatedList;
       const wasEditing = !!editingId;
       if (editingId) {
-        // Editing never changes position — reordering is a separate,
-        // explicit action (the ▲▼ buttons in the list below).
-        updatedList = allGames.map(g => g.id === editingId ? gameData : g);
-        saveMsg.textContent = 'Game updated.';
-      } else if (badgeTier(gameData) === 0) {
-        // No badges: goes to the TOP of the untagged group (right under
-        // the last tagged game) instead of the very bottom of the whole list.
-        const firstUntaggedIdx = allGames.findIndex(g => badgeTier(g) === 0);
-        updatedList = [...allGames];
-        if (firstUntaggedIdx === -1) {
-          updatedList.push(gameData); // no untagged games yet — nothing to insert above
+        const oldGame = allGames.find(g => g.id === editingId);
+        const oldTier = oldGame ? badgeTier(oldGame) : 0;
+        const newTier = badgeTier(gameData);
+        if (oldTier > 0 && newTier === 0) {
+          // Lost its last badge -> reposition to the top of the untagged
+          // group instead of leaving it wherever it used to sit.
+          const withoutOld = allGames.filter(g => g.id !== editingId);
+          updatedList = insertNewGames(withoutOld, [gameData]);
         } else {
-          updatedList.splice(firstUntaggedIdx, 0, gameData);
+          // Position never changes otherwise — reordering is a separate,
+          // explicit action (the ▲▼⤒ buttons in the list below).
+          updatedList = allGames.map(g => g.id === editingId ? gameData : g);
         }
-        saveMsg.textContent = 'Game added.';
+        saveMsg.textContent = 'Game updated.';
       } else {
-        // Has a badge: appends to the end of its own tier group, same as before.
-        updatedList = [...allGames, gameData];
+        updatedList = insertNewGames(allGames, [gameData]);
         saveMsg.textContent = 'Game added.';
       }
       await saveGamesList(updatedList);
@@ -683,9 +894,6 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       imgSearchResults.querySelectorAll('.img-result').forEach(el => {
         el.addEventListener('click', () => {
           const item = results[Number(el.dataset.i)];
-          // Use the (small, fast-loading) thumbnail as the saved image —
-          // it's plenty for a card thumbnail. Swap to item.link for the
-          // full-resolution original if you'd rather have that instead.
           fImg.value = (item.image && item.image.thumbnailLink) || item.link;
           updatePreview();
           closeImgSearch();
@@ -701,11 +909,116 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     if (e.key === 'Enter') { e.preventDefault(); runImageSearch(); }
   });
 
+  // ── BULK ADD ─────────────────────────────────────────────────
+  function addBulkRow() {
+    const container = document.getElementById('bulkRows');
+    const row = document.createElement('div');
+    row.className = 'bulk-row';
+    row.innerHTML = `
+      <button type="button" class="bulk-remove-row" title="Remove this row">✕</button>
+      <div class="bulk-row-fields">
+        <input type="text" class="bulk-name" placeholder="Game name"/>
+        <input type="url" class="bulk-url" placeholder="Game URL"/>
+        <input type="url" class="bulk-img" placeholder="Image URL"/>
+        <div class="bulk-badges">
+          <label><input type="checkbox" class="bulk-new"/> New! ✨</label>
+          <label><input type="checkbox" class="bulk-pop"/> Hot! 🔥</label>
+          <label><input type="checkbox" class="bulk-fixed"/> Fixed 🔨</label>
+        </div>
+      </div>`;
+    row.querySelector('.bulk-remove-row').addEventListener('click', () => row.remove());
+    container.appendChild(row);
+  }
+  function resetBulkForm() {
+    document.getElementById('bulkRows').innerHTML = '';
+    for (let i = 0; i < 3; i++) addBulkRow();
+  }
+  document.getElementById('bulkAddRowBtn').addEventListener('click', addBulkRow);
+  resetBulkForm(); // seed 3 blank rows on page load
+
+  document.getElementById('bulkSubmitBtn').addEventListener('click', async () => {
+    const bulkSaveMsg = document.getElementById('bulkSaveMsg');
+    const rows = Array.from(document.querySelectorAll('#bulkRows .bulk-row'));
+    const newGamesInOrder = [];
+    const errors = [];
+
+    rows.forEach((row, idx) => {
+      const name = row.querySelector('.bulk-name').value.trim();
+      const url = row.querySelector('.bulk-url').value.trim();
+      const img = row.querySelector('.bulk-img').value.trim();
+      const isNew = row.querySelector('.bulk-new').checked;
+      const isPop = row.querySelector('.bulk-pop').checked;
+      const isFixed = row.querySelector('.bulk-fixed').checked;
+
+      if (!name && !url && !img) return; // fully blank row — skip silently
+      if (!name || !url || !img) {
+        errors.push(`Row ${idx + 1} needs a name, URL, and image (or leave all three blank to skip it).`);
+        return;
+      }
+      newGamesInOrder.push({ id: newGameId(), name, url, img, isNew, isPop, isFixed });
+    });
+
+    bulkSaveMsg.style.display = 'none';
+    if (errors.length > 0) {
+      bulkSaveMsg.textContent = errors.join(' ');
+      bulkSaveMsg.className = 'save-msg err';
+      bulkSaveMsg.style.display = 'block';
+      return;
+    }
+    if (newGamesInOrder.length === 0) {
+      bulkSaveMsg.textContent = 'Nothing to add — fill in at least one row.';
+      bulkSaveMsg.className = 'save-msg err';
+      bulkSaveMsg.style.display = 'block';
+      return;
+    }
+
+    document.getElementById('bulkSubmitBtn').disabled = true;
+    try {
+      const updatedList = insertNewGames(allGames, newGamesInOrder);
+      await saveGamesList(updatedList);
+      bulkSaveMsg.textContent = `Added ${newGamesInOrder.length} game${newGamesInOrder.length === 1 ? '' : 's'}.`;
+      bulkSaveMsg.className = 'save-msg ok';
+      bulkSaveMsg.style.display = 'block';
+      notifyGameChange(newGamesInOrder.map(g => `A game "${g.name}" has been added.`).join('\n'));
+      resetBulkForm();
+      renderList();
+    } catch (err) {
+      console.error(err);
+      bulkSaveMsg.textContent = 'Could not save — check your Firestore rules and connection.';
+      bulkSaveMsg.className = 'save-msg err';
+      bulkSaveMsg.style.display = 'block';
+    } finally {
+      document.getElementById('bulkSubmitBtn').disabled = false;
+    }
+  });
+
   // ── SITE STATUS (Markdown banner shown on the games page) ──
   const statusInput = document.getElementById('statusInput');
   const statusPreview = document.getElementById('statusPreview');
   const statusSaveBtn = document.getElementById('statusSaveBtn');
   const statusSaveMsg = document.getElementById('statusSaveMsg');
+  const bellOnBtn = document.getElementById('bellOnBtn');
+  const bellOffBtn = document.getElementById('bellOffBtn');
+  let bellOn = true;
+
+  function setBellUI(isOn) {
+    bellOn = isOn;
+    bellOnBtn.classList.toggle('active', isOn);
+    bellOffBtn.classList.toggle('active', !isOn);
+    renderStatusPreview();
+  }
+  bellOnBtn.addEventListener('click', () => setBellUI(true));
+  bellOffBtn.addEventListener('click', () => setBellUI(false));
+
+  // Puts the chosen emoji at the start AND end — same spot the old
+  // hardcoded banner used it. Empty text stays empty either way (an
+  // empty status still falls back to the default banner on the page).
+  function wrapStatus(markdown, bell) {
+    const text = markdown.trim();
+    if (!text) return '';
+    const emoji = bell ? '🔔' : '🔕';
+    return `${emoji} ${text} ${emoji}`;
+  }
 
   function renderStatusPreview() {
     const text = statusInput.value.trim();
@@ -717,14 +1030,17 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
     statusPreview.style.color = '';
     statusPreview.style.fontWeight = '';
-    statusPreview.innerHTML = window.marked ? window.marked.parse(text) : escapeHtml(text);
+    const wrapped = wrapStatus(statusInput.value, bellOn);
+    statusPreview.innerHTML = window.marked ? window.marked.parse(wrapped) : escapeHtml(wrapped);
   }
   statusInput.addEventListener('input', renderStatusPreview);
 
   async function loadStatus() {
     try {
       const snap = await getDoc(STATUS_REF);
-      statusInput.value = snap.exists() ? (snap.data().markdown || '') : '';
+      const data = snap.exists() ? snap.data() : {};
+      statusInput.value = data.markdown || '';
+      setBellUI(data.bell !== false); // defaults to bell-on if never set
     } catch (err) {
       console.error(err);
     }
@@ -734,11 +1050,11 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   statusSaveBtn.addEventListener('click', async () => {
     statusSaveBtn.disabled = true;
     try {
-      await setDoc(STATUS_REF, { markdown: statusInput.value });
+      await setDoc(STATUS_REF, { markdown: statusInput.value, bell: bellOn });
       statusSaveMsg.textContent = 'Status saved — live on the games page now.';
       statusSaveMsg.className = 'save-msg ok';
       statusSaveMsg.style.display = 'block';
-      notifyStatusChange(statusInput.value);
+      notifyStatusChange(wrapStatus(statusInput.value, bellOn));
     } catch (err) {
       console.error(err);
       statusSaveMsg.textContent = 'Could not save — check your Firestore rules and connection.';
@@ -768,19 +1084,10 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     renderList();
   }
 
-  function badgeTier(g) {
-    if (g.isNew) return 3;
-    if (g.isFixed) return 2;
-    if (g.isPop) return 1;
-    return 0;
-  }
-  const TIER_LABEL = { 3: '✨ New', 2: '🔨 Fixed', 1: '🔥 Hot', 0: 'Everything Else' };
-
-  // Moves a game earlier/later WITHIN its own tier group. Tier order
-  // itself (New > Fixed > Hot > everything else) is always fixed on
-  // the public page, so this only ever reorders games that share the
-  // same badge — moving "up" past a higher tier isn't a thing that
-  // exists, hence the buttons disable at tier boundaries.
+  // Moves a game earlier/later, or straight to the top, WITHIN its own
+  // tier. Tier order itself (New > Fixed > Hot > everything else) is
+  // always fixed on the public page, so these only ever reorder games
+  // that share the same badge — buttons disable at tier boundaries.
   async function moveGame(id, direction) {
     const sorted = [...allGames].sort((a, b) => badgeTier(b) - badgeTier(a));
     const i = sorted.findIndex(g => g.id === id);
@@ -794,6 +1101,27 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     const updated = [...allGames];
     [updated[idxA], updated[idxB]] = [updated[idxB], updated[idxA]];
 
+    try {
+      await saveGamesList(updated);
+      renderList();
+    } catch (err) {
+      console.error(err);
+      alert('Could not reorder — check your Firestore rules and connection.');
+    }
+  }
+
+  async function moveGameToTop(id) {
+    const game = allGames.find(g => g.id === id);
+    if (!game) return;
+    const tier = badgeTier(game);
+    const withoutGame = allGames.filter(g => g.id !== id);
+    const firstSameTierIdx = withoutGame.findIndex(g => badgeTier(g) === tier);
+    const updated = [...withoutGame];
+    if (firstSameTierIdx === -1) {
+      updated.push(game);
+    } else {
+      updated.splice(firstSameTierIdx, 0, game);
+    }
     try {
       await saveGamesList(updated);
       renderList();
@@ -839,8 +1167,9 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       ${header}
       <div class="game-row">
         <div class="reorder-col">
-          <button class="btn-reorder" data-id="${g.id}" data-dir="up" ${canUp ? '' : 'disabled'} title="Move up">▲</button>
-          <button class="btn-reorder" data-id="${g.id}" data-dir="down" ${canDown ? '' : 'disabled'} title="Move down">▼</button>
+          <button class="btn-reorder top-btn" data-id="${g.id}" data-action="top" ${canUp ? '' : 'disabled'} title="Jump to top of this section">⤒</button>
+          <button class="btn-reorder" data-id="${g.id}" data-action="up" ${canUp ? '' : 'disabled'} title="Move up">▲</button>
+          <button class="btn-reorder" data-id="${g.id}" data-action="down" ${canDown ? '' : 'disabled'} title="Move down">▼</button>
         </div>
         <div class="row-thumb"><img src="${escapeHtml(g.img)}" loading="lazy"></div>
         <div class="row-info"><div class="row-name">${escapeHtml(g.name)}</div></div>
@@ -857,7 +1186,11 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
 
     listEl.querySelectorAll('.btn-reorder').forEach(btn =>
-      btn.addEventListener('click', () => moveGame(btn.dataset.id, btn.dataset.dir))
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        if (action === 'top') moveGameToTop(btn.dataset.id);
+        else moveGame(btn.dataset.id, action);
+      })
     );
     listEl.querySelectorAll('.btn-edit').forEach(btn =>
       btn.addEventListener('click', () => startEdit(btn.dataset.id))
@@ -870,6 +1203,8 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   function startEdit(id) {
     const g = allGames.find(x => x.id === id);
     if (!g) return;
+    activateTab('games');
+    activateAddMode('one');
     editingId = g.id;
     fName.value = g.name || '';
     fUrl.value = g.url || '';
@@ -900,6 +1235,137 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       alert('Could not delete — check your Firestore rules and connection.');
     }
   }
+
+  // ── WORLD RECORDS ─────────────────────────────────────────
+  // site/wr has three independent fields (intro, records, cheaters)
+  // edited from three separate panels — every save here uses
+  // {merge:true} so saving one doesn't wipe out the other two.
+  const wrIntroInput = document.getElementById('wrIntroInput');
+  const wrIntroPreview = document.getElementById('wrIntroPreview');
+  const wrCheatersInput = document.getElementById('wrCheatersInput');
+  let wrRecords = [];
+
+  function renderWrIntroPreview() {
+    const text = wrIntroInput.value.trim();
+    if (!text) {
+      wrIntroPreview.textContent = 'Nothing set yet.';
+      wrIntroPreview.style.color = '#999';
+      wrIntroPreview.style.fontWeight = 'normal';
+      return;
+    }
+    wrIntroPreview.style.color = '';
+    wrIntroPreview.style.fontWeight = '';
+    wrIntroPreview.innerHTML = window.marked ? window.marked.parse(wrIntroInput.value) : escapeHtml(wrIntroInput.value);
+  }
+  wrIntroInput.addEventListener('input', renderWrIntroPreview);
+
+  async function loadWrData() {
+    try {
+      const snap = await getDoc(WR_REF);
+      const data = snap.exists() ? snap.data() : {};
+      wrIntroInput.value = data.intro || '';
+      wrRecords = data.records || [];
+      wrCheatersInput.value = data.cheaters || '';
+    } catch (err) {
+      console.error(err);
+    }
+    renderWrIntroPreview();
+    renderWrRecords();
+  }
+
+  document.getElementById('wrIntroSaveBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('wrIntroSaveMsg');
+    try {
+      await setDoc(WR_REF, { intro: wrIntroInput.value }, { merge: true });
+      msg.textContent = 'Instructions saved.';
+      msg.className = 'save-msg ok';
+      msg.style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Could not save — check your Firestore rules and connection.';
+      msg.className = 'save-msg err';
+      msg.style.display = 'block';
+    }
+  });
+
+  document.getElementById('wrCheatersSaveBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('wrCheatersSaveMsg');
+    try {
+      await setDoc(WR_REF, { cheaters: wrCheatersInput.value.trim() }, { merge: true });
+      msg.textContent = 'Cheaters list saved.';
+      msg.className = 'save-msg ok';
+      msg.style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Could not save — check your Firestore rules and connection.';
+      msg.className = 'save-msg err';
+      msg.style.display = 'block';
+    }
+  });
+
+  async function saveWrRecords() {
+    await setDoc(WR_REF, { records: wrRecords }, { merge: true });
+  }
+
+  function renderWrRecords() {
+    const listEl = document.getElementById('wrRecordsList');
+    if (wrRecords.length === 0) {
+      listEl.innerHTML = '<div class="empty-note">No records yet — add one above.</div>';
+      return;
+    }
+    listEl.innerHTML = wrRecords.map((text, i) => `
+      <div class="wr-record-row" data-i="${i}">
+        <input type="text" class="wr-record-input" value="${escapeHtml(text)}"/>
+        <button type="button" class="row-actions btn-delete wr-record-delete">Delete</button>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.wr-record-input').forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const i = Number(e.target.closest('.wr-record-row').dataset.i);
+        wrRecords[i] = e.target.value.trim();
+        try {
+          await saveWrRecords();
+        } catch (err) {
+          console.error(err);
+          alert('Could not save — check your Firestore rules and connection.');
+        }
+      });
+    });
+    listEl.querySelectorAll('.wr-record-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const i = Number(e.target.closest('.wr-record-row').dataset.i);
+        if (!confirm('Delete this record?')) return;
+        wrRecords.splice(i, 1);
+        try {
+          await saveWrRecords();
+          renderWrRecords();
+        } catch (err) {
+          console.error(err);
+          alert('Could not delete — check your Firestore rules and connection.');
+        }
+      });
+    });
+  }
+
+  async function addWrRecord() {
+    const input = document.getElementById('wrNewRecordInput');
+    const val = input.value.trim();
+    if (!val) return;
+    wrRecords.push(val);
+    input.value = '';
+    try {
+      await saveWrRecords();
+      renderWrRecords();
+    } catch (err) {
+      console.error(err);
+      alert('Could not save — check your Firestore rules and connection.');
+    }
+  }
+  document.getElementById('wrAddRecordBtn').addEventListener('click', addWrRecord);
+  document.getElementById('wrNewRecordInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addWrRecord(); }
+  });
 
   updatePreview();
 </script>
