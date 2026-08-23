@@ -45,9 +45,9 @@
   understands the old single-string format too, so nothing breaks if
   Firestore still has data from before this change.
 
-  Also includes a Google Images picker for thumbnails (needs a
-  one-time API key setup — see the comment above the image-search
-  code further down) and posts Discord notifications on game/status
+  Also includes a RAWG.io game-database image picker for thumbnails
+  (needs a one-time free API key — see the comment above RAWG_API_KEY
+  further down) and posts Discord notifications on game/status
   changes (see the comment above DISCORD_WEBHOOK_URL further down).
 ============================================================ -->
 
@@ -410,9 +410,10 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
                   <button type="button" class="btn-search" id="imgSearchBtn">Search</button>
                 </div>
                 <div class="img-search-note">
-                  Searches Google Images (needs a one-time API key setup — see the comment in the
-                  file's script if results say "not set up yet"). You can still paste any direct
-                  image URL above.
+                  Searches RAWG's video game database (needs a one-time free API key — see the
+                  comment above RAWG_API_KEY in the script if results say "not set up yet"). Great
+                  for real/well-known games, thinner on obscure browser-game clones. You can always
+                  paste any direct image URL above instead.
                 </div>
                 <div class="img-search-results" id="imgSearchResults"></div>
               </div>
@@ -567,14 +568,17 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   const STATUS_REF = doc(db, 'site', 'status');   // Markdown banner on the games page
   const WR_REF = doc(db, 'site', 'wr');           // World Records page content
 
-  // ── GOOGLE IMAGE SEARCH SETUP ────────────────────────────────
-  // Fill these in from Google Cloud Console (Custom Search JSON API)
-  // and programmablesearchengine.google.com. See the comment above
-  // the image search code further down for exact steps. Until these
-  // are filled in, the image search button will show a setup message
-  // instead of trying to search.
-  const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY';
-  const GOOGLE_CSE_ID = 'YOUR_SEARCH_ENGINE_ID';
+  // ── RAWG IMAGE SEARCH SETUP ───────────────────────────────────
+  // RAWG.io is a free video game database (500k+ games) with real
+  // cover art/screenshots — a much better fit for game thumbnails
+  // than a general image search, and it's free with no credit card.
+  // (Switched from Google Custom Search, which closed to new
+  // customers — see the comment above the search code further down.)
+  //
+  // Get a free key: sign up at https://rawg.io/apidocs, fill in the
+  // short developer-info form, copy the key from your account page.
+  // Free tier: 20,000 requests/month, no billing required.
+  const RAWG_API_KEY = 'YOUR_RAWG_API_KEY';
 
   // ── DISCORD NOTIFICATIONS ─────────────────────────────────────
   // Replaces the old .github/workflows/discord-site-update.yml.
@@ -844,26 +848,35 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
   });
 
-  // ── IMAGE SEARCH (Google Custom Search — Images) ──────────────
-  // Real Google Images results, but this needs two things set up first
-  // (both free to start):
-  //   1. A Custom Search Engine at programmablesearchengine.google.com
-  //      → create one, set it to search the entire web, turn on "Image
-  //        search" in its settings, then copy its Search engine ID.
-  //   2. An API key for the "Custom Search JSON API" at
-  //      console.cloud.google.com → APIs & Services → Credentials
-  //      → Create Credentials → API key. Enable the "Custom Search API"
-  //        for your project first (APIs & Services → Library).
-  // Paste both into GOOGLE_API_KEY / GOOGLE_CSE_ID near the top of this
-  // script. Free tier is 100 searches/day, then billed per query — set
-  // a daily quota cap in Cloud Console so it can't run up a bill.
+  // ── IMAGE SEARCH (RAWG.io video game database) ─────────────────
+  // Why RAWG instead of a general image search: Google's Custom
+  // Search JSON API closed to new customers (existing customers only,
+  // shutting down entirely Jan 1, 2027 — see developers.google.com's
+  // own notice on that API). Wikimedia Commons is free and open to
+  // anyone, but it's a Creative-Commons image library, not a game
+  // database — it essentially never has cover art for named games.
+  // RAWG is a free, purpose-built video game database (500k+ games)
+  // with real cover art/screenshots, no billing, no card required.
   //
-  // SECURITY NOTE: this key is visible to anyone who views this page's
-  // source (this is a static site — there's no server to hide it
-  // behind). Once you have the key, go to Cloud Console → Credentials
-  // → your key → "Set an application restriction" → HTTP referrers,
-  // and add your site's domain (e.g. schoolflashcards5.github.io/*).
-  // That stops the key from being usable from anywhere but your site.
+  // Setup: sign up at https://rawg.io/apidocs, fill in the short
+  // developer-info form, copy your key from the account page, paste
+  // it into RAWG_API_KEY near the top of this script.
+  //
+  // Coverage: real/commercial/well-known games (Doom, Minecraft,
+  // FNAF, 2048, Flappy Bird, Subway Surfers, BTD4, Crossy Road, Cut
+  // the Rope...) turn up fine. Obscure reskinned browser clones (a
+  // random itch.io "GunSpin" or "GladiHoppers"-style game) often
+  // won't be in RAWG's database at all — paste a direct URL for those.
+  //
+  // ATTRIBUTION: RAWG's terms ask for a visible credit + link back to
+  // RAWG on pages that use their data/images. A small "Game art via
+  // RAWG.io" link has been added to the games page footer for this —
+  // don't remove it if you're using RAWG images live on the site.
+  //
+  // SECURITY NOTE: like any key in a static site, this is visible in
+  // the page source to anyone who looks. Unlike Google's, RAWG's free
+  // tier has no billing attached — worst case if it leaks is hitting
+  // the 20k/month cap, not an unexpected charge.
   const imgSearchToggle = document.getElementById('imgSearchToggle');
   const imgSearchPanel = document.getElementById('imgSearchPanel');
   const imgSearchInput = document.getElementById('imgSearchInput');
@@ -890,40 +903,38 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     const term = imgSearchInput.value.trim();
     if (!term) return;
 
-    if (GOOGLE_API_KEY === 'YOUR_GOOGLE_API_KEY' || GOOGLE_CSE_ID === 'YOUR_SEARCH_ENGINE_ID') {
-      imgSearchResults.innerHTML = '<div class="img-search-status">Google image search isn\'t set up yet — see the comment above the image-search code in this file for the two things you need (API key + Search Engine ID). You can still paste any direct image URL above.</div>';
+    if (RAWG_API_KEY === '8ca2cd1c42f4442695fd453518576129') {
+      imgSearchResults.innerHTML = '<div class="img-search-status">Image search isn\'t set up yet — see the comment above RAWG_API_KEY near the top of this file (it\'s a free sign-up, no billing). You can still paste any direct image URL above.</div>';
       return;
     }
 
     imgSearchResults.innerHTML = '<div class="img-search-status">Searching…</div>';
     try {
-      const url = 'https://www.googleapis.com/customsearch/v1?' + new URLSearchParams({
-        key: GOOGLE_API_KEY, cx: GOOGLE_CSE_ID, q: term,
-        searchType: 'image', num: '10', safe: 'active'
+      const url = 'https://api.rawg.io/api/games?' + new URLSearchParams({
+        key: RAWG_API_KEY, search: term, page_size: '21'
       });
       const res = await fetch(url);
       const data = await res.json();
 
-      if (data.error) {
-        console.error(data.error);
-        imgSearchResults.innerHTML = `<div class="img-search-status">Google API error: ${escapeHtml(data.error.message || 'unknown error')}</div>`;
+      if (data.error || data.detail) {
+        console.error(data);
+        imgSearchResults.innerHTML = `<div class="img-search-status">RAWG API error: ${escapeHtml(data.error || data.detail)}</div>`;
         return;
       }
 
-      const results = (data.items || []).filter(item => item.link);
+      const results = (data.results || []).filter(g => g.background_image);
       if (results.length === 0) {
-        imgSearchResults.innerHTML = '<div class="img-search-status">No image results — try a different search.</div>';
+        imgSearchResults.innerHTML = '<div class="img-search-status">No results in RAWG\'s database for that — try a different search, or paste a direct image URL above.</div>';
         return;
       }
 
-      imgSearchResults.innerHTML = results.map((item, i) => {
-        const thumb = (item.image && item.image.thumbnailLink) || item.link;
-        return `<div class="img-result" data-i="${i}"><img src="${escapeHtml(thumb)}" loading="lazy"></div>`;
-      }).join('');
+      imgSearchResults.innerHTML = results.map((g, i) =>
+        `<div class="img-result" data-i="${i}" title="${escapeHtml(g.name)}"><img src="${escapeHtml(g.background_image)}" loading="lazy"></div>`
+      ).join('');
       imgSearchResults.querySelectorAll('.img-result').forEach(el => {
         el.addEventListener('click', () => {
-          const item = results[Number(el.dataset.i)];
-          fImg.value = (item.image && item.image.thumbnailLink) || item.link;
+          const g = results[Number(el.dataset.i)];
+          fImg.value = g.background_image;
           updatePreview();
           closeImgSearch();
         });
