@@ -659,9 +659,12 @@ you never need to touch this file's HTML to manage the game list.
     const box = document.getElementById('statusBox');
     try {
       const snap = await getDoc(doc(db, 'site', 'status'));
-      const markdown = snap.exists() ? (snap.data().markdown || '') : '';
-      if (markdown.trim()) {
-        box.innerHTML = window.marked ? window.marked.parse(markdown) : escapeHtml(markdown);
+      const data = snap.exists() ? snap.data() : {};
+      const markdown = (data.markdown || '').trim();
+      if (markdown) {
+        const emoji = data.bell === false ? '🔕' : '🔔'; // defaults to bell-on if never set
+        const wrapped = `${emoji} ${markdown} ${emoji}`;
+        box.innerHTML = window.marked ? window.marked.parse(wrapped) : escapeHtml(wrapped);
       }
       // If there's no status set yet (or the doc doesn't exist), the
       // fallback text already sitting in statusBox stays as-is.
