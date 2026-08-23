@@ -578,7 +578,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   // Get a free key: sign up at https://rawg.io/apidocs, fill in the
   // short developer-info form, copy the key from your account page.
   // Free tier: 20,000 requests/month, no billing required.
-  const RAWG_API_KEY = 'YOUR_RAWG_API_KEY';
+  const RAWG_API_KEY = '8ca2cd1c42f4442695fd453518576129';
 
   // ── DISCORD NOTIFICATIONS ─────────────────────────────────────
   // Replaces the old .github/workflows/discord-site-update.yml.
@@ -903,7 +903,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     const term = imgSearchInput.value.trim();
     if (!term) return;
 
-    if (RAWG_API_KEY === '8ca2cd1c42f4442695fd453518576129') {
+    if (RAWG_API_KEY === 'YOUR_RAWG_API_KEY') {
       imgSearchResults.innerHTML = '<div class="img-search-status">Image search isn\'t set up yet — see the comment above RAWG_API_KEY near the top of this file (it\'s a free sign-up, no billing). You can still paste any direct image URL above.</div>';
       return;
     }
