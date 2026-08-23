@@ -230,6 +230,28 @@
     }[c]));
   }
 
+  function normalizeRecord(entry) {
+    if (entry && typeof entry === 'object') {
+      return { name: entry.name || '', record: entry.record || '', unbeatable: !!entry.unbeatable };
+    }
+    // Old plain-string format from before records had structured fields.
+    let text = String(entry ?? '');
+    let unbeatable = false;
+    const m = text.match(/\s*\(UNBEATABLE\)\s*$/i);
+    if (m) {
+      unbeatable = true;
+      text = text.slice(0, m.index);
+    }
+    const dashIdx = text.indexOf(' - ');
+    if (dashIdx === -1) return { name: text.trim(), record: '', unbeatable };
+    return { name: text.slice(0, dashIdx).trim(), record: text.slice(dashIdx + 3).trim(), unbeatable };
+  }
+
+  function formatRecordLine(r) {
+    const base = r.record ? `${r.name} - ${r.record}` : r.name;
+    return r.unbeatable ? `${base} (UNBEATABLE)` : base;
+  }
+
   async function loadWrData() {
     try {
       const snap = await getDoc(doc(db, 'site', 'wr'));
@@ -244,10 +266,10 @@
       }
 
       // Records
-      const records = data.records || [];
+      const records = (data.records || []).map(normalizeRecord);
       const recordsBox = document.getElementById('wrRecords');
       if (records.length > 0) {
-        recordsBox.innerHTML = records.map(r => `<h2>${escapeHtml(r)}</h2>`).join('');
+        recordsBox.innerHTML = records.map(r => `<h2>${escapeHtml(formatRecordLine(r))}</h2>`).join('');
       } else {
         recordsBox.innerHTML = '<div class="status-msg">No records yet — be the first!</div>';
       }
