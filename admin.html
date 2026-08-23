@@ -19,8 +19,9 @@
   TWO TABS:
     🎮 Games          — add/edit/delete games (one at a time or in
                         bulk), reorder them, and set the status banner
-    🏆 World Records  — edit the submission instructions, the list of
-                        records, and the cheaters callout
+    🏆 World Records  — edit the submission instructions, reorder and
+                        edit records (name / record / unbeatable), and
+                        the cheaters callout
 
   GAME ORDERING RULES (fixed, not something you configure per game):
     - Games always display NEW > FIXED > HOT > everything else,
@@ -35,6 +36,14 @@
       wherever it happened to be sitting (which — since tagged games
       originally get added at the end of their tier — used to mean it
       fell to the very bottom once it lost its badge).
+
+  World Records has the same ▲▼⤒ buttons, but as a plain flat list —
+  there's no tier concept there, so they just reorder the whole list
+  directly. Each record is {name, record, unbeatable} and displays as
+  "Name - Record" (plus " (UNBEATABLE)" if checked), same look as the
+  old hand-typed lines. normalizeRecord() in the script below still
+  understands the old single-string format too, so nothing breaks if
+  Firestore still has data from before this change.
 
   Also includes a Google Images picker for thumbnails (needs a
   one-time API key setup — see the comment above the image-search
@@ -305,13 +314,30 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 .empty-note, .loading-note { color: #999; font-size: 14px; text-align: center; padding: 26px 0; }
 
 /* ── WORLD RECORDS TAB ─────────────────────────────────── */
-.wr-record-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+.wr-add-row { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: center; }
+.wr-add-row input[type="text"] {
+  border: 2px solid #e2e2e2; color: var(--dark); font-family: inherit;
+  font-size: 14px; padding: 9px 12px; border-radius: 8px; outline: none;
+}
+.wr-add-row input[type="text"]:focus { border-color: var(--primary); }
+
+.unbeatable-check { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: #666; white-space: nowrap; cursor: pointer; }
+.unbeatable-check input { width: 16px; height: 16px; accent-color: var(--button); cursor: pointer; flex-shrink: 0; }
+
+.wr-record-row { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 .wr-record-row:last-child { border-bottom: none; }
-.wr-record-input {
-  flex: 1; border: 2px solid #e2e2e2; color: var(--dark); font-family: inherit;
+.wr-record-fields { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; }
+.wr-name-input, .wr-record-input {
+  border: 2px solid #e2e2e2; color: var(--dark); font-family: inherit;
   font-size: 14px; padding: 8px 10px; border-radius: 6px; outline: none;
 }
-.wr-record-input:focus { border-color: var(--primary); }
+.wr-name-input:focus, .wr-record-input:focus { border-color: var(--primary); }
+
+@media (max-width: 700px) {
+  .wr-add-row { grid-template-columns: 1fr; }
+  .wr-record-fields { grid-template-columns: 1fr; }
+  .wr-record-row { flex-wrap: wrap; }
+}
 </style>
 </head>
 <body>
@@ -481,10 +507,13 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
 
       <div class="panel">
         <h2>Records</h2>
+        <p class="panel-note">Each record has a name and the record itself, shown as "Name - Record" (with "(UNBEATABLE)" tacked on if you check that box) — same look as before, just split into fields instead of one line you type by hand.</p>
         <div class="field span-2">
           <label>Add a Record</label>
-          <div class="input-with-btn">
-            <input type="text" id="wrNewRecordInput" placeholder="e.g. Jane Doe - 500 in Flappy Bird"/>
+          <div class="wr-add-row">
+            <input type="text" id="wrNewName" placeholder="Name"/>
+            <input type="text" id="wrNewRecord" placeholder="Record — e.g. 500 in Flappy Bird"/>
+            <label class="unbeatable-check"><input type="checkbox" id="wrNewUnbeatable"/> Unbeatable</label>
             <button type="button" class="btn-search" id="wrAddRecordBtn">Add</button>
           </div>
         </div>
@@ -1240,10 +1269,39 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   // site/wr has three independent fields (intro, records, cheaters)
   // edited from three separate panels — every save here uses
   // {merge:true} so saving one doesn't wipe out the other two.
+  //
+  // Records used to be one freeform string per entry (e.g. "Jane Doe -
+  // 500 in Flappy Bird (UNBEATABLE)"), typed by hand. They're now
+  // structured — {name, record, unbeatable} — but normalizeRecord()
+  // still understands the old string format too, so anything already
+  // in Firestore from before this change keeps working; it just gets
+  // saved back in the new structured shape the next time it's touched.
   const wrIntroInput = document.getElementById('wrIntroInput');
   const wrIntroPreview = document.getElementById('wrIntroPreview');
   const wrCheatersInput = document.getElementById('wrCheatersInput');
   let wrRecords = [];
+
+  function normalizeRecord(entry) {
+    if (entry && typeof entry === 'object') {
+      return { name: entry.name || '', record: entry.record || '', unbeatable: !!entry.unbeatable };
+    }
+    // Old plain-string format: "Name - record text (UNBEATABLE)"
+    let text = String(entry ?? '');
+    let unbeatable = false;
+    const m = text.match(/\s*\(UNBEATABLE\)\s*$/i);
+    if (m) {
+      unbeatable = true;
+      text = text.slice(0, m.index);
+    }
+    const dashIdx = text.indexOf(' - ');
+    if (dashIdx === -1) return { name: text.trim(), record: '', unbeatable };
+    return { name: text.slice(0, dashIdx).trim(), record: text.slice(dashIdx + 3).trim(), unbeatable };
+  }
+
+  function formatRecordLine(r) {
+    const base = r.record ? `${r.name} - ${r.record}` : r.name;
+    return r.unbeatable ? `${base} (UNBEATABLE)` : base;
+  }
 
   function renderWrIntroPreview() {
     const text = wrIntroInput.value.trim();
@@ -1264,7 +1322,7 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
       const snap = await getDoc(WR_REF);
       const data = snap.exists() ? snap.data() : {};
       wrIntroInput.value = data.intro || '';
-      wrRecords = data.records || [];
+      wrRecords = (data.records || []).map(normalizeRecord);
       wrCheatersInput.value = data.cheaters || '';
     } catch (err) {
       console.error(err);
@@ -1307,34 +1365,91 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     await setDoc(WR_REF, { records: wrRecords }, { merge: true });
   }
 
+  async function moveWrRecord(i, direction) {
+    const j = direction === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= wrRecords.length) return;
+    [wrRecords[i], wrRecords[j]] = [wrRecords[j], wrRecords[i]];
+    try {
+      await saveWrRecords();
+      renderWrRecords();
+    } catch (err) {
+      console.error(err);
+      alert('Could not reorder — check your Firestore rules and connection.');
+    }
+  }
+
+  async function moveWrRecordToTop(i) {
+    if (i <= 0) return;
+    const [item] = wrRecords.splice(i, 1);
+    wrRecords.unshift(item);
+    try {
+      await saveWrRecords();
+      renderWrRecords();
+    } catch (err) {
+      console.error(err);
+      alert('Could not reorder — check your Firestore rules and connection.');
+    }
+  }
+
   function renderWrRecords() {
     const listEl = document.getElementById('wrRecordsList');
     if (wrRecords.length === 0) {
       listEl.innerHTML = '<div class="empty-note">No records yet — add one above.</div>';
       return;
     }
-    listEl.innerHTML = wrRecords.map((text, i) => `
+    listEl.innerHTML = wrRecords.map((r, i) => {
+      const canUp = i > 0;
+      const canDown = i < wrRecords.length - 1;
+      return `
       <div class="wr-record-row" data-i="${i}">
-        <input type="text" class="wr-record-input" value="${escapeHtml(text)}"/>
-        <button type="button" class="row-actions btn-delete wr-record-delete">Delete</button>
-      </div>
-    `).join('');
+        <div class="reorder-col">
+          <button class="btn-reorder top-btn" data-i="${i}" data-action="top" ${canUp ? '' : 'disabled'} title="Jump to top">⤒</button>
+          <button class="btn-reorder" data-i="${i}" data-action="up" ${canUp ? '' : 'disabled'} title="Move up">▲</button>
+          <button class="btn-reorder" data-i="${i}" data-action="down" ${canDown ? '' : 'disabled'} title="Move down">▼</button>
+        </div>
+        <div class="wr-record-fields">
+          <input type="text" class="wr-name-input" value="${escapeHtml(r.name)}" placeholder="Name"/>
+          <input type="text" class="wr-record-input" value="${escapeHtml(r.record)}" placeholder="Record"/>
+          <label class="unbeatable-check"><input type="checkbox" class="wr-unbeatable-input" ${r.unbeatable ? 'checked' : ''}/> Unbeatable</label>
+        </div>
+        <button type="button" class="row-actions btn-delete wr-record-delete" data-i="${i}">Delete</button>
+      </div>`;
+    }).join('');
 
-    listEl.querySelectorAll('.wr-record-input').forEach(input => {
-      input.addEventListener('change', async (e) => {
-        const i = Number(e.target.closest('.wr-record-row').dataset.i);
-        wrRecords[i] = e.target.value.trim();
+    listEl.querySelectorAll('.wr-record-row').forEach(row => {
+      const i = Number(row.dataset.i);
+      const nameInput = row.querySelector('.wr-name-input');
+      const recordInput = row.querySelector('.wr-record-input');
+      const unbeatableInput = row.querySelector('.wr-unbeatable-input');
+      async function saveRow() {
+        wrRecords[i] = {
+          name: nameInput.value.trim(),
+          record: recordInput.value.trim(),
+          unbeatable: unbeatableInput.checked,
+        };
         try {
           await saveWrRecords();
         } catch (err) {
           console.error(err);
           alert('Could not save — check your Firestore rules and connection.');
         }
+      }
+      nameInput.addEventListener('change', saveRow);
+      recordInput.addEventListener('change', saveRow);
+      unbeatableInput.addEventListener('change', saveRow);
+    });
+
+    listEl.querySelectorAll('.btn-reorder').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.i);
+        const action = btn.dataset.action;
+        if (action === 'top') moveWrRecordToTop(i);
+        else moveWrRecord(i, action);
       });
     });
     listEl.querySelectorAll('.wr-record-delete').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const i = Number(e.target.closest('.wr-record-row').dataset.i);
+      btn.addEventListener('click', async () => {
+        const i = Number(btn.dataset.i);
         if (!confirm('Delete this record?')) return;
         wrRecords.splice(i, 1);
         try {
@@ -1349,11 +1464,16 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
   }
 
   async function addWrRecord() {
-    const input = document.getElementById('wrNewRecordInput');
-    const val = input.value.trim();
-    if (!val) return;
-    wrRecords.push(val);
-    input.value = '';
+    const nameInput = document.getElementById('wrNewName');
+    const recordInput = document.getElementById('wrNewRecord');
+    const unbeatableInput = document.getElementById('wrNewUnbeatable');
+    const name = nameInput.value.trim();
+    const record = recordInput.value.trim();
+    if (!name || !record) return;
+    wrRecords.push({ name, record, unbeatable: unbeatableInput.checked });
+    nameInput.value = '';
+    recordInput.value = '';
+    unbeatableInput.checked = false;
     try {
       await saveWrRecords();
       renderWrRecords();
@@ -1363,8 +1483,10 @@ main { max-width: 1050px; margin: 0 auto; padding: 36px 20px 100px; }
     }
   }
   document.getElementById('wrAddRecordBtn').addEventListener('click', addWrRecord);
-  document.getElementById('wrNewRecordInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addWrRecord(); }
+  [document.getElementById('wrNewName'), document.getElementById('wrNewRecord')].forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addWrRecord(); }
+    });
   });
 
   updatePreview();
