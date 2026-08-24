@@ -1,1 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--Flashcards v5.2.3 — games now load from a database, see the script at the bottom-->
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SchoolFlashCards5 - Unblocked Games</title>
+	
+    <link rel="shortcut icon" href="logo.png" />
+    <style>
+        html { scroll-behavior: smooth; }
 
+:root {
+            --primary: #4ECDC4;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #292F36;
+            --light: #F7FFF7;
+            --button: #FF6B6B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Comic Sans MS", cursive, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+		.logo {
+    position: relative;
+    display: inline-block;
+}
+
+.logo .hover-text {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.logo:hover .hover-text {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.nt{position:relative;display:inline-block;font-style:normal}
+.nt s{text-decoration-thickness:3px}
+.ek{position:absolute;left:0;top:100%;font-style:normal}
+
+        header {
+            background-color: var(--primary);
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            align-items: center;
+            gap: 15px;
+            margin: 0;
+            padding: 0;
+            white-space: nowrap;
+        }
+
+        .header-search {
+            flex-shrink: 0;
+            width: 250px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .random-game-btn,
+        .suggestions-btn {
+            background-color: var(--dark);
+            color: var(--accent);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            text-decoration: none;
+            user-select: none;
+        }
+
+        .random-game-btn:hover,
+        .suggestions-btn:hover {
+            background-color: #454545;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+            font-size: 14px;
+            padding: 5px 0;
+        }
+
+        nav ul li a:hover {
+            color: var(--accent);
+        }
+
+        .header-search input {
+            width: 100%;
+            padding: 8px 15px;
+            border-radius: 30px;
+            border: none;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-search button {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background-color: var(--button);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero {
+            background-color: var(--secondary);
+            padding: 40px 0;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            max-width: 700px;
+            margin: 0 auto 25px;
+        }
+
+        .search-bar {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: none;
+            font-size: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar button {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background-color: var(--button);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+        }
+
+        .games-section {
+            padding: 40px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--dark);
+            font-size: 32px;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .game-card {
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-image {
+            height: 150px;
+            background-color: var(--secondary);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .game-info {
+            padding: 15px;
+        }
+
+        .game-info-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .badges-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .game-title {
+            font-size: 18px;
+            color: var(--dark);
+        }
+
+        .game-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .play-btn {
+            display: inline-block;
+            background-color: var(--button);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .play-btn:hover {
+            background-color: #454545;
+        }
+
+        .categories {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .category-btn {
+            background-color: white;
+            border: 2px solid var(--secondary);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .copyright {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .awardshii-btn {
+            display: inline-block;
+            background-color: #18bf3a;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .hotgames-btn {
+            display: inline-block;
+            background-color: #be0000;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+
+        .fixed-btn {
+            display: inline-block;
+            background-color: #2bbcff;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+
+        .status-msg {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #777;
+        }
+
+        /* Site status banner — content comes from sfc-admin.html's "Site Status"
+           panel and can include Markdown (bold, links, lists, etc).
+           max-width + margin:auto centers the BOX itself (matching .hero p's
+           pattern above) — without it, text-align:center only centers text
+           inside a box that spans the full 1200px container, which looks
+           fine for one short line but ragged/off the moment it wraps. */
+        .status-box {
+            max-width: 700px;
+            margin: 0 auto;
+            font-family: "Comic Sans MS", cursive, sans-serif;
+            color: red;
+            font-weight: bold;
+            font-size: 1em;
+            overflow-wrap: break-word;
+        }
+        .status-box a { color: red; text-decoration: underline; }
+        .status-box p { margin: 6px 0; }
+        .status-box ul, .status-box ol { text-align: left; display: inline-block; margin: 6px auto; }
+        .status-box code {
+            background: rgba(0,0,0,0.08); padding: 1px 5px; border-radius: 4px;
+            font-family: inherit; font-weight: normal;
+            overflow-wrap: break-word;
+        }
+
+        /* Stack on mobile only */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .header-left, .header-right {
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .header-search {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            nav ul {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PJDCVHZFS3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-PJDCVHZFS3');
+</script>
+
+	
+<body>
+    <header>
+    <div class="container">
+        <div class="header-content">
+    <div class="header-left">
+        <a href="games" class="logo">
+            School<span>Flash</span>Cards
+            <span class="hover-text"><i class="nt"><s>Nny</s><i class="ek">EK</i></i> was here</span>
+        </a>
+        <button class="random-game-btn" id="randomGameBtn">Random Game</button>
+        <a href="suggestions" class="suggestions-btn">Suggestions</a>
+    </div>
+    <div class="header-right">
+        <nav>
+            <ul>
+                <li><a href="https://discord.gg/GnVUkcsfMw">Discord</a></li>
+                <li><a href="https://www.youtube.com/@SFC3GH">YT</a></li>
+                <li><a href="https://www.tiktok.com/@schoolflashcards">TikTok</a></li>
+                <li><a href="wr">World Records</a></li>
+            </ul>
+        </nav>
+        <div class="header-search">
+            <input type="text" placeholder="Search games..." />
+            
+        </div>
+    </div>
+</div>
+</div>
+</header>
+
+
+    <section class="hero">
+      <div class="container">
+        <div id="statusBox" class="status-box">
+			<b>🔔 Join the <a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a> for updates on SFC as we are only giving status updates on the <a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a> currently. 🔔</b>
+		</div>
+
+    <!--Notification copy emojis: 🔔 (notification) 🔕 No updates happening soon or have happened recently! 🔕(no noitfication)-->
+    <!-- statusBox's content above is just the fallback shown before the real status loads (or if none has ever been set).
+         The real status text is set from sfc-admin.html's "Site Status" panel — written as Markdown, rendered here. -->
+    
+  </div>
+</section>
+<!-- 
+GAMES NOW LIVE IN A DATABASE, NOT IN THIS FILE.
+To add, edit, or delete games, open sfc-admin.html and log in.
+This page just reads whatever is in the game list and renders it —
+you never need to touch this file's HTML to manage the game list.
+-->
+
+
+
+    
+    <section id="games" class="games-section">
+        <div class="container">
+            <h1 class="section-title">Games</h1>
+            
+            <div class="games-grid" id="gamesGrid">
+                <div class="status-msg">Loading games…</div>
+            </div>
+
+			<!-- END GAMES -->
+
+        </div>
+    </section>
+    
+<footer>
+    <div class="container">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <p class="copyright">© 2026 SchoolFlashCards5. EKFun, jaysoninthesubway, and PinkGame are affiliates of SchoolFlashCard5.™</p>
+            <button id="cycleBrandBtn" style="background: var(--button); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
+                Enable Disguise Mode
+            </button>
+            <button onclick="window.location.href='info';" style="background: var(--button); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-family: inherit;">
+                Info about sfc
+            </button>
+        </div>
+        <!-- Some game thumbnails may be sourced via RAWG.io's game database
+             (picked from sfc-admin.html's image search) — their terms ask for
+             this credit/link on pages using that data. Keep this if you use
+             RAWG images; safe to remove if you stop using that picker. -->
+        <p class="copyright" style="margin-top: 6px;">Some game art/images via <a href="https://rawg.io" target="_blank" style="color:inherit;">RAWG.io</a></p>
+    </div>
+</footer>
+
+<script>
+    // Branding options - add your own favicon filenames
+    const brandOptions = [
+        {
+            title: "New Tab",
+            favicon: "chromelogo.png" // Default favicon
+        },
+        {
+            title: "SchoolFlashCards5 - Unblocked Games", 
+            favicon: "logo.png" // Alternate favicon 1
+        }
+    ];
+    let currentBrandIndex = 0;
+
+    function cycleBranding() {
+        // Move to next option (loop back to 0 if at end)
+        currentBrandIndex = (currentBrandIndex + 1) % brandOptions.length;
+        
+        const brand = brandOptions[currentBrandIndex];
+        
+        // Update title
+        document.title = brand.title;
+        
+        // Update favicon
+        let favicon = document.querySelector("link[rel='icon']");
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            document.head.appendChild(favicon);
+        }
+        favicon.href = brand.favicon;
+    }
+
+    // Initialize with first brand
+    document.addEventListener('DOMContentLoaded', function() {
+        cycleBranding(); // Set initial brand
+        document.getElementById('cycleBrandBtn').addEventListener('click', cycleBranding);
+    });
+</script>
+
+<!-- Markdown rendering for the site status banner (set from sfc-admin.html) -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+<!-- ============================================================
+  FIREBASE + GAMES DATA/RENDERING
+  Reuses the same Firebase project as pinkgame, but a SEPARATE
+  Firestore document (site/sfc-games) so the two game lists stay
+  independent. Same idea as before: one document holding the whole
+  list, so loading this page costs a single Firestore read no matter
+  how many games are in it. Manage games from sfc-admin.html — you
+  can log in there with the same admin account you use for PinkGame.
