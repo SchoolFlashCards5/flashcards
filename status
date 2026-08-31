@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SchoolFlashCards5 - System Status</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%A7</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:"Comic Sans MS", cursive, sans-serif; }
+
+    :root{
+        --primary:#4ECDC4;
+        --accent:#FFE66D;
+        --dark:#292F36;
+        --light:#F7FFF7;
+        --button:#FF6B6B;
+    }
+
+    body{ background:var(--light); color:var(--dark); }
+    .pixel{ font-family:"Press Start 2P", cursive; }
+
+    header{ background:var(--primary); padding:15px 0; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .container{ width:92%; max-width:760px; margin:0 auto; }
+    .header-content{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .logo{ font-size:24px; font-weight:bold; color:white; text-decoration:none; }
+    .logo span{ color:var(--accent); }
+    nav ul{ display:flex; list-style:none; gap:14px; }
+    nav ul li a{ color:white; text-decoration:none; font-weight:bold; font-size:13px; }
+    nav ul li a:hover{ color:var(--accent); }
+
+    main{ padding:30px 0 60px; }
+
+    .last-checked{
+        display:flex; align-items:center; justify-content:flex-end; gap:10px;
+        font-size:12px; color:#888; margin-bottom:14px;
+    }
+    .refresh-btn{
+        background:white; border:2px solid var(--primary); color:var(--primary); font-weight:bold;
+        border-radius:20px; padding:4px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px;
+        transition:transform .15s;
+    }
+    .refresh-btn:hover{ transform:scale(1.05); }
+    .refresh-icon{ display:inline-block; transition:transform .5s; }
+    .refresh-icon.spin{ transform:rotate(360deg); }
+
+    .overall-banner{
+        border-radius:12px; padding:20px 24px; margin-bottom:24px; color:var(--dark);
+        display:flex; align-items:center; gap:16px; box-shadow:0 3px 10px rgba(0,0,0,.08);
+    }
+    .overall-banner.state-maintenance{ background:#FFF7DE; border:2px solid var(--accent); }
+    .overall-banner.state-operational{ background:#E9FBF9; border:2px solid var(--primary); }
+    .overall-banner.state-outage{ background:#FFECEC; border:2px solid var(--button); }
+    .overall-icon{ font-size:34px; }
+    .overall-title{ font-size:18px; font-weight:bold; margin-bottom:2px; }
+    .overall-sub{ font-size:13px; color:#666; }
+
+    .card{
+        background:white; border-radius:12px; box-shadow:0 3px 12px rgba(0,0,0,.08);
+        padding:20px 22px; margin-bottom:24px;
+    }
+    .card h2{ font-size:16px; margin-bottom:6px; }
+    .card .card-sub{ font-size:12px; color:#888; margin-bottom:10px; }
+
+    .component-row{ padding:14px 0; border-bottom:1px solid #eee; }
+    .component-row:last-child{ border-bottom:none; }
+    .component-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+    .component-name{ font-weight:bold; font-size:14px; }
+
+    .status-badge{
+        display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:bold;
+        padding:4px 10px; border-radius:20px;
+    }
+    .status-badge.operational{ background:rgba(78,205,196,.18); color:#238b83; }
+    .status-badge.maintenance{ background:rgba(255,230,109,.35); color:#8a6d00; }
+    .status-badge.outage{ background:rgba(255,107,107,.2); color:#c23b3b; }
+
+    .status-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+    .status-dot.operational{ background:var(--primary); }
+    .status-dot.maintenance{ background:var(--accent); }
+    .status-dot.outage{ background:var(--button); }
+    .status-dot.pulse{ animation:pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse{
+        0%,100%{ box-shadow:0 0 0 0 rgba(0,0,0,.18); }
+        50%{ box-shadow:0 0 0 5px rgba(0,0,0,0); }
+    }
+
+    .uptime-row{ display:flex; gap:2px; margin-bottom:5px; }
+    .uptime-cell{ flex:1; height:24px; border-radius:2px; cursor:default; }
+    .uptime-cell.operational{ background:var(--primary); }
+    .uptime-cell.maintenance{ background:var(--accent); }
+    .uptime-cell.outage{ background:var(--button); }
+
+    .uptime-meta{ display:flex; justify-content:space-between; font-size:11px; color:#999; }
+
+    .incident-card{
+        border-left:6px solid var(--accent); background:#FFFDF3; border-radius:8px;
+        padding:18px 20px; margin-bottom:16px;
+    }
+    .incident-title{ font-size:15px; font-weight:bold; margin-bottom:2px; }
+    .incident-sub{ font-size:12px; color:#888; margin-bottom:14px; }
+    .timeline-entry{ display:flex; gap:12px; margin-bottom:12px; }
+    .timeline-entry:last-child{ margin-bottom:0; }
+    .timeline-time{ font-size:11px; color:#999; min-width:76px; padding-top:2px; }
+    .timeline-body strong{ display:block; font-size:13px; margin-bottom:2px; }
+    .timeline-body p{ font-size:13px; color:#555; line-height:1.4; }
+
+    .past-incidents details{
+        border-top:1px solid #eee; padding:10px 0;
+    }
+    .past-incidents details:first-of-type{ border-top:none; }
+    .past-incidents summary{
+        cursor:pointer; font-size:13px; font-weight:bold; display:flex; justify-content:space-between;
+        align-items:center; list-style:none;
+    }
+    .past-incidents summary::-webkit-details-marker{ display:none; }
+    .past-incidents summary .resolved-tag{
+        font-size:11px; font-weight:normal; background:rgba(78,205,196,.18); color:#238b83;
+        padding:2px 8px; border-radius:10px;
+    }
+    .past-incidents p{ font-size:12px; color:#666; margin-top:8px; line-height:1.5; }
+
+    .subscribe-card{ text-align:center; }
+    .discord-btn{
+        display:inline-block; background:var(--button); color:white; font-weight:bold; text-decoration:none;
+        padding:10px 20px; border-radius:8px; font-size:14px; margin-top:8px; transition:transform .15s, background .2s;
+    }
+    .discord-btn:hover{ background:var(--dark); transform:scale(1.05); }
+
+    footer{ text-align:center; padding:20px 0 40px; font-size:12px; color:#999; }
+    footer a{ color:#888; }
+
+    @media (max-width:600px){
+        .header-content{ flex-direction:column; text-align:center; }
+        .overall-banner{ flex-direction:column; text-align:center; }
+        .last-checked{ justify-content:center; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="header-content">
+            <a href="sfc-maintenance.html" class="logo">School<span>Flash</span>Cards</a>
+            <nav>
+                <ul>
+                    <li><a href="sfc-maintenance.html">Maintenance Notice</a></li>
+                    <li><a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a></li>
+                    <li><a href="https://www.tiktok.com/@schoolflashcards" target="_blank">TikTok</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+
+        <div class="last-checked">
+            <span id="lastCheckedText">Checked just now</span>
+            <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon" id="refreshIcon">🔄</span> Refresh</button>
+        </div>
+
+        <div class="overall-banner" id="overallBanner">
+            <div class="overall-icon" id="overallIcon">✅</div>
+            <div>
+                <div class="overall-title" id="overallTitle">All Systems Operational</div>
+                <div class="overall-sub" id="overallSub">Everything is running normally.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Component Status</h2>
+            <p class="card-sub">Uptime over the last 45 days · today is the right-most bar</p>
+            <div id="componentsList"></div>
+        </div>
+
+        <div class="card">
+            <h2>Active Incident</h2>
+            <div id="activeIncident"></div>
+        </div>
+
+        <div class="card past-incidents">
+            <h2>Past Incidents</h2>
+            <div id="pastIncidents"></div>
+        </div>
+
+        <div class="card subscribe-card">
+            <h2>Want a ping the second we're back?</h2>
+            <p class="card-sub">We only post real-time updates in one place.</p>
+            <a class="discord-btn" href="https://discord.gg/GnVUkcsfMw" target="_blank">🔔 Join the Discord</a>
+        </div>
+
+    </div>
+</main>
+
+<footer>
+    <div class="container">
+        <p>© 2026 SchoolFlashCards5 · <a href="sfc-maintenance.html">Maintenance notice</a> · Status auto-refreshes every 60s</p>
+    </div>
+</footer>
+
+<script>
+(function(){
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    // ---- Components ----
+    // status: 'operational' | 'maintenance' | 'outage'
+    //
+    // Everything defaults to "operational". To flag something as down or
+    // under maintenance, change its status AND add an "until" date/time.
+    // Once that date/time passes, this page automatically treats it as
+    // "operational" again on its own — you never have to remember to
+    // change it back.
+    //
+    // "until" format: new Date(year, monthIndex, day, hour, minute)
+    //   monthIndex is 0-based: Jan=0, Feb=1, ... Aug=7, Sep=8, ... Dec=11
+    //   Example — mark the game library down until 6:00 PM on Sept 2, 2026:
+    //   { name: "Game Library & CDN", status: "maintenance", until: new Date(2026, 8, 2, 18, 0) }
+    const components = [
+        { name: "Game Library & CDN", status: "operational" },
+        { name: "Login & Save Data",  status: "operational" },
+        { name: "Discord Bot",        status: "operational" },
+        { name: "Site Search",        status: "operational" },
+        { name: "Random Game Button", status: "operational" }
+    ];
+
+    function getEffectiveStatus(component){
+        if (component.until && Date.now() >= component.until.getTime()){
+            return "operational"; // the "until" date has passed — auto-revert
+        }
+        return component.status;
+    }
+
+    const statusLabel = {
+        operational: "Operational",
+        maintenance: "Under Maintenance",
+        outage: "Down"
+    };
+
+    // Real fixed dates — the whole site was down on both of these days
+    const FULL_SITE_OUTAGES = [
+        new Date(2026, 7, 20),  // August 20, 2026
+        new Date(2026, 6, 25)   // July 25, 2026
+    ];
+    function isSameDay(a, b){
+        return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    }
+
+    function buildUptimeRow(component, index){
+        const days = 45;
+        let cellsHtml = "";
+        let upCount = 0;
+
+        for (let i = 0; i < days; i++){
+            const dayOffset = days - 1 - i;
+            const isToday = dayOffset === 0;
+            const cellDate = new Date(Date.now() - dayOffset * DAY_MS);
+            const isFullOutageDay = FULL_SITE_OUTAGES.some(d => isSameDay(d, cellDate));
+            let state = "operational";
+
+            if (isFullOutageDay){
+                state = "outage";
+            } else if (isToday){
+                state = getEffectiveStatus(component);
+            }
+
+            if (state === "operational") upCount++;
+
+            const dateStr = cellDate.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+            cellsHtml += `<div class="uptime-cell ${state}" title="${dateStr} · ${statusLabel[state]}"></div>`;
+        }
+
+        const pct = ((upCount / days) * 100).toFixed(1);
+        return { cellsHtml, pct };
+    }
+
+    function renderComponents(){
+        const list = document.getElementById("componentsList");
+        list.innerHTML = components.map((c, i) => {
+            const { cellsHtml, pct } = buildUptimeRow(c, i);
+            const effective = getEffectiveStatus(c);
+            const pulse = effective !== "operational" ? "pulse" : "";
+            return `
+                <div class="component-row">
+                    <div class="component-top">
+                        <span class="component-name">${c.name}</span>
+                        <span class="status-badge ${effective}">
+                            <span class="status-dot ${effective} ${pulse}"></span>
+                            ${statusLabel[effective]}
+                        </span>
+                    </div>
+                    <div class="uptime-row">${cellsHtml}</div>
+                    <div class="uptime-meta">
+                        <span>45 days ago</span>
+                        <span>${pct}% uptime</span>
+                        <span>today</span>
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    // ---- Active incident, generated automatically from component status ----
+    // Nothing to edit here — this reflects whatever is set in the
+    // `components` array above, and clears itself once an "until" date passes.
+    function renderActiveIncident(){
+        const affected = components
+            .map(c => ({ c, effective: getEffectiveStatus(c) }))
+            .filter(x => x.effective !== "operational");
+
+        const container = document.getElementById("activeIncident");
+
+        if (affected.length === 0){
+            container.innerHTML = `
+                <div class="incident-card" style="border-left-color:var(--primary); background:#F1FCFB;">
+                    <div class="incident-title">✅ No active incidents</div>
+                    <div class="incident-sub" style="margin-bottom:0;">Everything is running normally.</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = affected.map(({ c, effective }) => {
+            const untilText = c.until
+                ? `Auto-resolves ${c.until.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
+                : "No auto-resolve time set yet.";
+            return `
+                <div class="incident-card">
+                    <div class="incident-title">${c.name} — ${statusLabel[effective]}</div>
+                    <div class="incident-sub" style="margin-bottom:0;">${untilText}</div>
+                </div>`;
+        }).join("");
+    }
+
+    // ---- Past incidents (dates computed relative to today) ----
+    function renderPastIncidents(){
+        const incidents = [
+            { date: FULL_SITE_OUTAGES[0], title: "Full site outage — new games added &amp; site rework", detail: "The entire site was taken offline to add a batch of new games and rework parts of the site. Back online once everything shipped." },
+            { date: FULL_SITE_OUTAGES[1], title: "Full site outage — routine maintenance",                 detail: "Standard scheduled maintenance, nothing out of the ordinary going on. Site was back online shortly after." }
+        ];
+
+        const html = incidents.map(inc => {
+            const dateStr = inc.date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+            return `
+                <details>
+                    <summary>
+                        <span>${inc.title}</span>
+                        <span class="resolved-tag">Resolved · ${dateStr}</span>
+                    </summary>
+                    <p>${inc.detail}</p>
+                </details>`;
+        }).join("");
+
+        document.getElementById("pastIncidents").innerHTML = html;
+    }
+
+    // ---- Overall banner, generated automatically from component status ----
+    function renderOverallBanner(){
+        const banner = document.getElementById("overallBanner");
+        const icon = document.getElementById("overallIcon");
+        const title = document.getElementById("overallTitle");
+        const sub = document.getElementById("overallSub");
+
+        const affected = components
+            .map(c => ({ c, effective: getEffectiveStatus(c) }))
+            .filter(x => x.effective !== "operational");
+
+        banner.classList.remove("state-operational", "state-maintenance", "state-outage");
+
+        if (affected.length === 0){
+            banner.classList.add("state-operational");
+            icon.textContent = "✅";
+            title.textContent = "All Systems Operational";
+            sub.textContent = "Everything is running normally.";
+            return;
+        }
+
+        const names = affected.map(x => x.c.name).join(", ");
+        if (affected.some(x => x.effective === "outage")){
+            banner.classList.add("state-outage");
+            icon.textContent = "🚨";
+            title.textContent = "Partial Outage";
+        } else {
+            banner.classList.add("state-maintenance");
+            icon.textContent = "🛠️";
+            title.textContent = "Scheduled Maintenance In Progress";
+        }
+        sub.textContent = `${names} affected — everything else is running normally.`;
+    }
+
+    // ---- Live "last checked" ticker ----
+    let lastCheckedAt = Date.now();
+    function tickLastChecked(){
+        const secs = Math.floor((Date.now() - lastCheckedAt) / 1000);
+        const el = document.getElementById("lastCheckedText");
+        if (secs < 5) el.textContent = "Checked just now";
+        else if (secs < 60) el.textContent = `Checked ${secs}s ago`;
+        else el.textContent = `Checked ${Math.floor(secs / 60)}m ago`;
+    }
+
+    function refreshAll(){
+        lastCheckedAt = Date.now();
+        tickLastChecked();
+        renderComponents();
+        renderOverallBanner();
+        renderActiveIncident();
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", function(){
+        const icon = document.getElementById("refreshIcon");
+        icon.classList.add("spin");
+        setTimeout(() => icon.classList.remove("spin"), 500);
+        refreshAll();
+    });
+
+    renderComponents();
+    renderOverallBanner();
+    renderActiveIncident();
+    renderPastIncidents();
+    tickLastChecked();
+    setInterval(tickLastChecked, 1000);
+    setInterval(refreshAll, 60000);
+})();
+</script>
+
+</body>
+</html>
