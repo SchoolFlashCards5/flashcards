@@ -67,6 +67,7 @@
     .component-row:last-child{ border-bottom:none; }
     .component-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
     .component-name{ font-weight:bold; font-size:14px; }
+    .component-name .auto-tag{ font-size:10px; font-weight:normal; color:#aaa; margin-left:6px; }
 
     .status-badge{
         display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:bold;
@@ -91,6 +92,7 @@
     .uptime-cell.operational{ background:var(--primary); }
     .uptime-cell.maintenance{ background:var(--accent); }
     .uptime-cell.outage{ background:var(--button); }
+    .uptime-cell.unknown{ background:#eee; }
 
     .uptime-meta{ display:flex; justify-content:space-between; font-size:11px; color:#999; }
 
@@ -100,11 +102,6 @@
     }
     .incident-title{ font-size:15px; font-weight:bold; margin-bottom:2px; }
     .incident-sub{ font-size:12px; color:#888; margin-bottom:14px; }
-    .timeline-entry{ display:flex; gap:12px; margin-bottom:12px; }
-    .timeline-entry:last-child{ margin-bottom:0; }
-    .timeline-time{ font-size:11px; color:#999; min-width:76px; padding-top:2px; }
-    .timeline-body strong{ display:block; font-size:13px; margin-bottom:2px; }
-    .timeline-body p{ font-size:13px; color:#555; line-height:1.4; }
 
     .past-incidents details{
         border-top:1px solid #eee; padding:10px 0;
@@ -158,21 +155,21 @@
     <div class="container">
 
         <div class="last-checked">
-            <span id="lastCheckedText">Checked just now</span>
+            <span id="lastCheckedText">Loading…</span>
             <button class="refresh-btn" id="refreshBtn"><span class="refresh-icon" id="refreshIcon">🔄</span> Refresh</button>
         </div>
 
         <div class="overall-banner" id="overallBanner">
-            <div class="overall-icon" id="overallIcon">✅</div>
+            <div class="overall-icon" id="overallIcon">⏳</div>
             <div>
-                <div class="overall-title" id="overallTitle">All Systems Operational</div>
-                <div class="overall-sub" id="overallSub">Everything is running normally.</div>
+                <div class="overall-title" id="overallTitle">Loading status…</div>
+                <div class="overall-sub" id="overallSub"></div>
             </div>
         </div>
 
         <div class="card">
             <h2>Component Status</h2>
-            <p class="card-sub">Uptime over the last 45 days · today is the right-most bar</p>
+            <p class="card-sub">"Auto" components are checked by a script every 10 minutes. The rest are updated by hand when something's known to be wrong.</p>
             <div id="componentsList"></div>
         </div>
 
@@ -201,227 +198,259 @@
     </div>
 </footer>
 
-<script>
-(function(){
-    const DAY_MS = 24 * 60 * 60 * 1000;
+<!-- ============================================================
+  FIREBASE + STATUS DATA
+  Two Firestore documents feed this page:
+    site/status-checks — written automatically every ~10 minutes by
+      sfc-worker.js's scheduled health check. Covers the only two
+      things here with a real backend to check: Game Library & CDN
+      (Firestore + the games page itself) and Discord Notifications
+      (whether the webhook proxy is actually configured).
+    site/status-page — written by hand from sfc-admin.html's Status
+      tab. Holds manual overrides (for anything, including the two
+      automated components — an admin override always wins over the
+      automated check while it's active) and the Past Incidents list.
 
-    // ---- Components ----
-    // status: 'operational' | 'maintenance' | 'outage'
-    //
-    // Everything defaults to "operational". To flag something as down or
-    // under maintenance, change its status AND add an "until" date/time.
-    // Once that date/time passes, this page automatically treats it as
-    // "operational" again on its own — you never have to remember to
-    // change it back.
-    //
-    // "until" format: new Date(year, monthIndex, day, hour, minute)
-    //   monthIndex is 0-based: Jan=0, Feb=1, ... Aug=7, Sep=8, ... Dec=11
-    //   Example — mark the game library down until 6:00 PM on Sept 2, 2026:
-    //   { name: "Game Library & CDN", status: "maintenance", until: new Date(2026, 8, 2, 18, 0) }
-    const components = [
-        { name: "Game Library & CDN", status: "operational" },
-        { name: "Login & Save Data",  status: "operational" },
-        { name: "Discord Bot",        status: "operational" },
-        { name: "Site Search",        status: "operational" },
-        { name: "Random Game Button", status: "operational" }
-    ];
+  Manual-only components (Site Search, Random Game Button) have no
+  backend to check automatically, so their uptime history just shows
+  "operational" for every past day and only reflects a live override
+  for today — there's nothing real to track further back than that.
+  The two automated components show REAL day-by-day history, but only
+  starting from whenever this system first went live; anything before
+  that isn't retroactively known and lives in Past Incidents instead.
+============================================================ -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js';
 
-    function getEffectiveStatus(component){
-        if (component.until && Date.now() >= component.until.getTime()){
-            return "operational"; // the "until" date has passed — auto-revert
-        }
-        return component.status;
-    }
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3jxwyH9Pws4nhIT9ScDffk5CpHa99oMM",
+    authDomain: "pinkgame-1d4bf.firebaseapp.com",
+    projectId: "pinkgame-1d4bf",
+    storageBucket: "pinkgame-1d4bf.firebasestorage.app",
+    messagingSenderId: "531941128309",
+    appId: "1:531941128309:web:82e55394c6f48666a3603c",
+    measurementId: "G-WF5YT7S04W"
+  };
 
-    const statusLabel = {
-        operational: "Operational",
-        maintenance: "Under Maintenance",
-        outage: "Down"
-    };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // Real fixed dates — the whole site was down on both of these days
-    const FULL_SITE_OUTAGES = [
-        new Date(2026, 7, 20),  // August 20, 2026
-        new Date(2026, 6, 25)   // July 25, 2026
-    ];
-    function isSameDay(a, b){
-        return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-    }
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const HISTORY_DAYS = 45;
 
-    function buildUptimeRow(component, index){
-        const days = 45;
-        let cellsHtml = "";
-        let upCount = 0;
+  const COMPONENT_DEFS = [
+    { key: 'gameLibrary',           name: 'Game Library & CDN',   automated: true },
+    { key: 'discordNotifications',  name: 'Discord Notifications', automated: true },
+    { key: 'siteSearch',            name: 'Site Search',          automated: false },
+    { key: 'randomGame',            name: 'Random Game Button',   automated: false },
+  ];
 
-        for (let i = 0; i < days; i++){
-            const dayOffset = days - 1 - i;
-            const isToday = dayOffset === 0;
-            const cellDate = new Date(Date.now() - dayOffset * DAY_MS);
-            const isFullOutageDay = FULL_SITE_OUTAGES.some(d => isSameDay(d, cellDate));
-            let state = "operational";
+  const statusLabel = { operational: 'Operational', maintenance: 'Under Maintenance', outage: 'Down' };
 
-            if (isFullOutageDay){
-                state = "outage";
-            } else if (isToday){
-                state = getEffectiveStatus(component);
-            }
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
 
-            if (state === "operational") upCount++;
+  function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+  }
 
-            const dateStr = cellDate.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  // Merges the automated check + any active manual override into one
+  // "effective" status per component — an override wins while it's
+  // active (no "until" set, or "until" is still in the future).
+  function effectiveComponents(checks, statusPage) {
+    const overrides = (statusPage && statusPage.overrides) || {};
+    return COMPONENT_DEFS.map(def => {
+      const override = overrides[def.key];
+      const overrideActive = !!(override && override.status && (!override.until || Date.now() < override.until));
+      const check = (checks && checks[def.key]) || null;
 
-            cellsHtml += `<div class="uptime-cell ${state}" title="${dateStr} · ${statusLabel[state]}"></div>`;
-        }
+      const status = overrideActive ? override.status : (def.automated && check ? check.current : 'operational');
+      const note = overrideActive ? (override.note || '') : (def.automated && check ? (check.detail || '') : '');
+      const history = def.automated && check && Array.isArray(check.history) ? check.history : [];
+      const lastChecked = def.automated && check ? check.lastChecked : null;
 
-        const pct = ((upCount / days) * 100).toFixed(1);
-        return { cellsHtml, pct };
-    }
-
-    function renderComponents(){
-        const list = document.getElementById("componentsList");
-        list.innerHTML = components.map((c, i) => {
-            const { cellsHtml, pct } = buildUptimeRow(c, i);
-            const effective = getEffectiveStatus(c);
-            const pulse = effective !== "operational" ? "pulse" : "";
-            return `
-                <div class="component-row">
-                    <div class="component-top">
-                        <span class="component-name">${c.name}</span>
-                        <span class="status-badge ${effective}">
-                            <span class="status-dot ${effective} ${pulse}"></span>
-                            ${statusLabel[effective]}
-                        </span>
-                    </div>
-                    <div class="uptime-row">${cellsHtml}</div>
-                    <div class="uptime-meta">
-                        <span>45 days ago</span>
-                        <span>${pct}% uptime</span>
-                        <span>today</span>
-                    </div>
-                </div>`;
-        }).join("");
-    }
-
-    // ---- Active incident, generated automatically from component status ----
-    // Nothing to edit here — this reflects whatever is set in the
-    // `components` array above, and clears itself once an "until" date passes.
-    function renderActiveIncident(){
-        const affected = components
-            .map(c => ({ c, effective: getEffectiveStatus(c) }))
-            .filter(x => x.effective !== "operational");
-
-        const container = document.getElementById("activeIncident");
-
-        if (affected.length === 0){
-            container.innerHTML = `
-                <div class="incident-card" style="border-left-color:var(--primary); background:#F1FCFB;">
-                    <div class="incident-title">✅ No active incidents</div>
-                    <div class="incident-sub" style="margin-bottom:0;">Everything is running normally.</div>
-                </div>`;
-            return;
-        }
-
-        container.innerHTML = affected.map(({ c, effective }) => {
-            const untilText = c.until
-                ? `Auto-resolves ${c.until.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`
-                : "No auto-resolve time set yet.";
-            return `
-                <div class="incident-card">
-                    <div class="incident-title">${c.name} — ${statusLabel[effective]}</div>
-                    <div class="incident-sub" style="margin-bottom:0;">${untilText}</div>
-                </div>`;
-        }).join("");
-    }
-
-    // ---- Past incidents (dates computed relative to today) ----
-    function renderPastIncidents(){
-        const incidents = [
-            { date: FULL_SITE_OUTAGES[0], title: "Full site outage — new games added &amp; site rework", detail: "The entire site was taken offline to add a batch of new games and rework parts of the site. Back online once everything shipped." },
-            { date: FULL_SITE_OUTAGES[1], title: "Full site outage — routine maintenance",                 detail: "Standard scheduled maintenance, nothing out of the ordinary going on. Site was back online shortly after." }
-        ];
-
-        const html = incidents.map(inc => {
-            const dateStr = inc.date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-            return `
-                <details>
-                    <summary>
-                        <span>${inc.title}</span>
-                        <span class="resolved-tag">Resolved · ${dateStr}</span>
-                    </summary>
-                    <p>${inc.detail}</p>
-                </details>`;
-        }).join("");
-
-        document.getElementById("pastIncidents").innerHTML = html;
-    }
-
-    // ---- Overall banner, generated automatically from component status ----
-    function renderOverallBanner(){
-        const banner = document.getElementById("overallBanner");
-        const icon = document.getElementById("overallIcon");
-        const title = document.getElementById("overallTitle");
-        const sub = document.getElementById("overallSub");
-
-        const affected = components
-            .map(c => ({ c, effective: getEffectiveStatus(c) }))
-            .filter(x => x.effective !== "operational");
-
-        banner.classList.remove("state-operational", "state-maintenance", "state-outage");
-
-        if (affected.length === 0){
-            banner.classList.add("state-operational");
-            icon.textContent = "✅";
-            title.textContent = "All Systems Operational";
-            sub.textContent = "Everything is running normally.";
-            return;
-        }
-
-        const names = affected.map(x => x.c.name).join(", ");
-        if (affected.some(x => x.effective === "outage")){
-            banner.classList.add("state-outage");
-            icon.textContent = "🚨";
-            title.textContent = "Partial Outage";
-        } else {
-            banner.classList.add("state-maintenance");
-            icon.textContent = "🛠️";
-            title.textContent = "Scheduled Maintenance In Progress";
-        }
-        sub.textContent = `${names} affected — everything else is running normally.`;
-    }
-
-    // ---- Live "last checked" ticker ----
-    let lastCheckedAt = Date.now();
-    function tickLastChecked(){
-        const secs = Math.floor((Date.now() - lastCheckedAt) / 1000);
-        const el = document.getElementById("lastCheckedText");
-        if (secs < 5) el.textContent = "Checked just now";
-        else if (secs < 60) el.textContent = `Checked ${secs}s ago`;
-        else el.textContent = `Checked ${Math.floor(secs / 60)}m ago`;
-    }
-
-    function refreshAll(){
-        lastCheckedAt = Date.now();
-        tickLastChecked();
-        renderComponents();
-        renderOverallBanner();
-        renderActiveIncident();
-    }
-
-    document.getElementById("refreshBtn").addEventListener("click", function(){
-        const icon = document.getElementById("refreshIcon");
-        icon.classList.add("spin");
-        setTimeout(() => icon.classList.remove("spin"), 500);
-        refreshAll();
+      return { ...def, status, note, history, lastChecked, overrideActive };
     });
+  }
 
-    renderComponents();
-    renderOverallBanner();
-    renderActiveIncident();
-    renderPastIncidents();
-    tickLastChecked();
-    setInterval(tickLastChecked, 1000);
-    setInterval(refreshAll, 60000);
-})();
+  function buildUptimeRow(component) {
+    const today = todayStr();
+    const historyByDate = {};
+    component.history.forEach(h => { historyByDate[h.date] = h.status; });
+
+    let cellsHtml = '';
+    let knownDays = 0;
+    let upCount = 0;
+
+    for (let i = 0; i < HISTORY_DAYS; i++) {
+      const dayOffset = HISTORY_DAYS - 1 - i;
+      const cellDate = new Date(Date.now() - dayOffset * DAY_MS);
+      const dateKey = cellDate.toISOString().slice(0, 10);
+      const dateLabel = cellDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+      let state;
+      if (dateKey === today) {
+        state = component.status; // today always reflects the live effective status
+      } else if (component.automated) {
+        state = historyByDate[dateKey] || 'unknown'; // no recorded data that far back yet
+      } else {
+        state = 'operational'; // manual-only components: no history to check, assume fine
+      }
+
+      if (state !== 'unknown') { knownDays++; if (state === 'operational') upCount++; }
+      cellsHtml += `<div class="uptime-cell ${state}" title="${dateLabel} · ${state === 'unknown' ? 'No data yet' : statusLabel[state]}"></div>`;
+    }
+
+    const pct = knownDays > 0 ? ((upCount / knownDays) * 100).toFixed(1) : '—';
+    return { cellsHtml, pct };
+  }
+
+  function renderComponents(components) {
+    const list = document.getElementById('componentsList');
+    list.innerHTML = components.map(c => {
+      const { cellsHtml, pct } = buildUptimeRow(c);
+      const pulse = c.status !== 'operational' ? 'pulse' : '';
+      const autoTag = c.automated ? '<span class="auto-tag">· auto</span>' : '';
+      return `
+        <div class="component-row">
+            <div class="component-top">
+                <span class="component-name">${escapeHtml(c.name)}${autoTag}</span>
+                <span class="status-badge ${c.status}">
+                    <span class="status-dot ${c.status} ${pulse}"></span>
+                    ${statusLabel[c.status]}
+                </span>
+            </div>
+            <div class="uptime-row">${cellsHtml}</div>
+            <div class="uptime-meta">
+                <span>45 days ago</span>
+                <span>${pct === '—' ? '' : pct + '% uptime'}</span>
+                <span>today</span>
+            </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderActiveIncident(components) {
+    const affected = components.filter(c => c.status !== 'operational');
+    const container = document.getElementById('activeIncident');
+
+    if (affected.length === 0) {
+      container.innerHTML = `
+        <div class="incident-card" style="border-left-color:var(--primary); background:#F1FCFB;">
+            <div class="incident-title">✅ No active incidents</div>
+            <div class="incident-sub" style="margin-bottom:0;">Everything is running normally.</div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = affected.map(c => `
+        <div class="incident-card">
+            <div class="incident-title">${escapeHtml(c.name)} — ${statusLabel[c.status]}</div>
+            <div class="incident-sub" style="margin-bottom:0;">${escapeHtml(c.note) || 'No further detail provided yet.'}</div>
+        </div>`).join('');
+  }
+
+  function renderOverallBanner(components) {
+    const banner = document.getElementById('overallBanner');
+    const icon = document.getElementById('overallIcon');
+    const title = document.getElementById('overallTitle');
+    const sub = document.getElementById('overallSub');
+
+    const affected = components.filter(c => c.status !== 'operational');
+    banner.classList.remove('state-operational', 'state-maintenance', 'state-outage');
+
+    if (affected.length === 0) {
+      banner.classList.add('state-operational');
+      icon.textContent = '✅';
+      title.textContent = 'All Systems Operational';
+      sub.textContent = 'Everything is running normally.';
+      return;
+    }
+
+    const names = affected.map(c => c.name).join(', ');
+    if (affected.some(c => c.status === 'outage')) {
+      banner.classList.add('state-outage');
+      icon.textContent = '🚨';
+      title.textContent = 'Partial Outage';
+    } else {
+      banner.classList.add('state-maintenance');
+      icon.textContent = '🛠️';
+      title.textContent = 'Scheduled Maintenance In Progress';
+    }
+    sub.textContent = `${names} affected — everything else is running normally.`;
+  }
+
+  function renderPastIncidents(incidents) {
+    const sorted = [...(incidents || [])].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const el = document.getElementById('pastIncidents');
+
+    if (sorted.length === 0) {
+      el.innerHTML = '<p class="card-sub" style="margin:0;">No past incidents recorded.</p>';
+      return;
+    }
+
+    el.innerHTML = sorted.map(inc => {
+      const dateStr = inc.date
+        ? new Date(inc.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+      return `
+        <details>
+            <summary>
+                <span>${escapeHtml(inc.title)}</span>
+                <span class="resolved-tag">Resolved${dateStr ? ' · ' + dateStr : ''}</span>
+            </summary>
+            <p>${escapeHtml(inc.detail)}</p>
+        </details>`;
+    }).join('');
+  }
+
+  let lastCheckedAt = null;
+  function tickLastChecked() {
+    const el = document.getElementById('lastCheckedText');
+    if (!lastCheckedAt) { el.textContent = 'Loading…'; return; }
+    const secs = Math.floor((Date.now() - lastCheckedAt) / 1000);
+    if (secs < 5) el.textContent = 'Checked just now';
+    else if (secs < 60) el.textContent = `Checked ${secs}s ago`;
+    else el.textContent = `Checked ${Math.floor(secs / 60)}m ago`;
+  }
+
+  async function loadAndRender() {
+    try {
+      const [checksSnap, pageSnap] = await Promise.all([
+        getDoc(doc(db, 'site', 'status-checks')),
+        getDoc(doc(db, 'site', 'status-page')),
+      ]);
+      const checks = checksSnap.exists() ? checksSnap.data() : {};
+      const statusPage = pageSnap.exists() ? pageSnap.data() : {};
+
+      const components = effectiveComponents(checks, statusPage);
+      renderComponents(components);
+      renderOverallBanner(components);
+      renderActiveIncident(components);
+      renderPastIncidents(statusPage.incidents);
+
+      lastCheckedAt = Date.now();
+      tickLastChecked();
+    } catch (err) {
+      console.error('Failed to load status:', err);
+      document.getElementById('lastCheckedText').textContent = 'Could not load status';
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('spin');
+    setTimeout(() => icon.classList.remove('spin'), 500);
+    loadAndRender();
+  });
+
+  loadAndRender();
+  setInterval(tickLastChecked, 1000);
+  setInterval(loadAndRender, 60000);
 </script>
 
 </body>
