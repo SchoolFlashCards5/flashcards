@@ -247,6 +247,16 @@
   ];
 
   const statusLabel = { operational: 'Operational', maintenance: 'Under Maintenance', outage: 'Down' };
+  const SEVERITY = { operational: 0, maintenance: 1, outage: 2 };
+
+  // Picks whichever of two statuses is worse (outage > maintenance >
+  // operational). Treats missing/'unknown' as "no opinion" so it never
+  // wins against a real recorded status.
+  function worseOf(a, b) {
+    if (!b || b === 'unknown') return a;
+    if (!a || a === 'unknown') return b;
+    return SEVERITY[b] > SEVERITY[a] ? b : a;
+  }
 
   function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -294,7 +304,12 @@
 
       let state;
       if (dateKey === today) {
-        state = component.status; // today always reflects the live effective status
+        // Show the WORSE of (a) how things look right now and (b) what's
+        // already recorded for today — otherwise an incident that starts
+        // and gets fixed within the same day vanishes from the bar the
+        // instant it's resolved, even though it genuinely happened.
+        const recordedToday = component.automated ? historyByDate[dateKey] : null;
+        state = worseOf(component.status, recordedToday);
       } else if (component.automated) {
         state = historyByDate[dateKey] || 'unknown'; // no recorded data that far back yet
       } else {
