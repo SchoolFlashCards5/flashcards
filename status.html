@@ -137,16 +137,16 @@
 </style>
 <style id="sfc-dark-mode">
 /* ===== Dark mode (shared across all SFC pages) ===== */
-.theme-toggle{width:38px;height:38px;padding:0;border:none;border-radius:50%;background:#292F36;color:#FFE66D;font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;transition:transform .2s,background-color .3s}
-.theme-toggle:hover{background:#454545;transform:scale(1.1)}
-.theme-toggle:focus-visible{outline:3px solid #FFE66D;outline-offset:2px}
+.settings-btn{width:38px;height:38px;padding:0;border:none;border-radius:50%;background:#292F36;color:#FFE66D;font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;user-select:none;transition:transform .2s,background-color .3s}
+.settings-btn:hover{background:#454545;transform:scale(1.1)}
+.settings-btn:focus-visible{outline:3px solid #FFE66D;outline-offset:2px}
 header nav ul{align-items:center}
 html[data-theme="dark"]{color-scheme:dark}
 html[data-theme="dark"] body{background-color:#14181d;color:#e8ecef}
 html[data-theme="dark"] header,
 html[data-theme="dark"] .hero{background-color:#000}
-html[data-theme="dark"] .theme-toggle{background:#3a3f47}
-html[data-theme="dark"] .theme-toggle:hover{background:#50565f}
+html[data-theme="dark"] .settings-btn{background:#3a3f47}
+html[data-theme="dark"] .settings-btn:hover{background:#50565f}
 html[data-theme="dark"] header{box-shadow:0 2px 10px rgba(0,0,0,.5)}
 html[data-theme="dark"] .last-checked{color:#9aa4ad}
 html[data-theme="dark"] .refresh-btn{background:#1f252c}
@@ -171,45 +171,173 @@ html[data-theme="dark"] .past-incidents p{color:#b0b9c1}
 html[data-theme="dark"] .past-incidents summary .resolved-tag{color:#5fe0d6}
 html[data-theme="dark"] .discord-btn:hover{background:#454545}
 html[data-theme="dark"] footer a{color:#aab3bb}
+
+/* ===== Settings popup ===== */
+.sfc-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.5);font-family:inherit}
+.sfc-overlay[hidden]{display:none}
+.sfc-overlay *{font-family:inherit}
+.sfc-panel{width:100%;max-width:360px;background:#fff;color:#292F36;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:18px 20px 8px;text-align:left}
+.sfc-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sfc-panel-head h2{font-size:22px;margin:0;color:inherit}
+.sfc-close{width:32px;height:32px;padding:0;border:none;border-radius:50%;background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
+.sfc-close:hover{background:rgba(128,128,128,.2)}
+.sfc-close:focus-visible,.sfc-pill:focus-visible{outline:3px solid #FF6B6B;outline-offset:2px}
+.sfc-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid #e3e8ec;cursor:pointer}
+.sfc-row-text{display:flex;flex-direction:column;gap:2px}
+.sfc-row-label{font-size:17px;font-weight:bold}
+.sfc-row-sub{font-size:13px;opacity:.7}
+.sfc-pill{position:relative;flex-shrink:0;width:54px;height:30px;padding:0;border:none;border-radius:999px;background:#c5ced6;cursor:pointer;transition:background-color .2s}
+.sfc-pill::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s}
+.sfc-pill[aria-checked="true"]{background:#4ECDC4}
+.sfc-pill[aria-checked="true"]::after{transform:translateX(24px)}
+@media (prefers-reduced-motion:reduce){.sfc-pill,.sfc-pill::after,.settings-btn{transition:none}}
+html[data-theme="dark"] .sfc-panel{background:#1f252c;color:#e8ecef;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+html[data-theme="dark"] .sfc-row{border-top-color:#2e3640}
+html[data-theme="dark"] .sfc-pill{background:#4a5058}
+html[data-theme="dark"] .sfc-pill[aria-checked="true"]{background:#4ECDC4}
 </style>
 <script>
 (function () {
-  var KEY = 'sfc-theme';        // same key on every page = same saved choice everywhere
-  var DEFAULT_THEME = 'light';  // new visitors: 'light', 'dark', or 'system' (follow their device)
+  var THEME_KEY = 'sfc-theme';        // saved dark/light choice (same key as before)
+  var DISGUISE_KEY = 'sfc-disguise';  // saved disguise choice: 'on' / 'off'
+  var DEFAULT_THEME = 'light';        // new visitors: 'light', 'dark', or 'system'
+  var DISGUISE_TITLE = 'New Tab';     // tab title while disguise mode is on
+  var DISGUISE_ICON = 'chromelogo.png'; // tab icon while disguise mode is on
   var root = document.documentElement;
-  var chosen = null;            // fallback if the browser blocks localStorage
+  var memTheme = null, memDisguise = null;   // fallbacks if the browser blocks localStorage
 
-  function saved() {
-    try { var v = localStorage.getItem(KEY); return v === 'dark' || v === 'light' ? v : null; }
-    catch (e) { return null; }
-  }
-  function current() {
-    var s = saved() || chosen;
-    if (s) return s;
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function getTheme() {
+    var v = read(THEME_KEY);
+    if (v === 'dark' || v === 'light') return v;
+    if (memTheme) return memTheme;
     if (DEFAULT_THEME === 'system') return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     return DEFAULT_THEME === 'dark' ? 'dark' : 'light';
   }
-  function apply(theme) {
-    root.setAttribute('data-theme', theme);
-    var btns = document.querySelectorAll('.theme-toggle');
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].setAttribute('aria-pressed', theme === 'dark');
-      btns[i].textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
-    }
+  function getDisguise() {
+    var v = read(DISGUISE_KEY);
+    if (v === 'on') return true;
+    if (v === 'off') return false;
+    return memDisguise === true;
   }
 
-  apply(current());   // runs in <head>, before first paint, so there's no light flash
+  // ---- dark mode ----
+  function applyTheme(t) { root.setAttribute('data-theme', t); }
+
+  // ---- disguise mode (tab title + icon) ----
+  // This script sits in <head> after <title> and the icon <link>, so these are this page's real ones.
+  var origTitle = document.title;
+  var origIcons = [].map.call(document.querySelectorAll('link[rel~="icon"]'), function (l) { return l.cloneNode(true); });
+  var shown = null;   // which disguise state the tab is currently showing
+
+  function applyDisguise(on) {
+    if (shown === on) { if (on && document.title !== DISGUISE_TITLE) document.title = DISGUISE_TITLE; return; }
+    var first = shown === null;
+    shown = on;
+    if (first && !on) return;   // page already shows its normal title and icon
+    // Remove EVERY existing icon link ("icon" and "shortcut icon"), then add one fresh one.
+    var olds = document.querySelectorAll('link[rel~="icon"]');
+    for (var i = olds.length - 1; i >= 0; i--) olds[i].parentNode.removeChild(olds[i]);
+    if (on) {
+      document.title = DISGUISE_TITLE;
+      var l = document.createElement('link');
+      l.rel = 'icon'; l.type = 'image/png'; l.href = DISGUISE_ICON;
+      document.head.appendChild(l);
+    } else {
+      document.title = origTitle;
+      origIcons.forEach(function (c) { document.head.appendChild(c.cloneNode(true)); });
+    }
+  }
+  // If anything else changes the title while disguise is on, put it back.
+  var titleEl = document.querySelector('title');
+  if (titleEl && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (shown && document.title !== DISGUISE_TITLE) document.title = DISGUISE_TITLE;
+    }).observe(titleEl, { childList: true, characterData: true, subtree: true });
+  }
+
+  // Runs while <head> loads, so the right theme/title/icon show from the first moment on every page.
+  applyTheme(getTheme());
+  applyDisguise(getDisguise());
+
+  // ---- settings popup ----
+  var overlay = null, opener = null;
+
+  function build() {
+    overlay = document.createElement('div');
+    overlay.className = 'sfc-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = [
+      '<div class="sfc-panel" role="dialog" aria-modal="true" aria-labelledby="sfcSettingsTitle">',
+      '  <div class="sfc-panel-head"><h2 id="sfcSettingsTitle">Settings</h2><button type="button" class="sfc-close" aria-label="Close settings">\u00d7</button></div>',
+      '  <div class="sfc-row" data-setting="dark"><div class="sfc-row-text"><span class="sfc-row-label" id="sfcDarkLabel">Dark mode</span><span class="sfc-row-sub">Switch the site to a dark theme</span></div>',
+      '    <button type="button" class="sfc-pill" role="switch" aria-checked="false" aria-labelledby="sfcDarkLabel"></button></div>',
+      '  <div class="sfc-row" data-setting="disguise"><div class="sfc-row-text"><span class="sfc-row-label" id="sfcDisguiseLabel">Disguise mode</span><span class="sfc-row-sub">Tab shows \u201cNew Tab\u201d with a Chrome icon</span></div>',
+      '    <button type="button" class="sfc-pill" role="switch" aria-checked="false" aria-labelledby="sfcDisguiseLabel"></button></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(overlay);
+  }
+  function syncPills() {
+    if (!overlay) return;
+    var states = { dark: getTheme() === 'dark', disguise: getDisguise() };
+    var rows = overlay.querySelectorAll('.sfc-row');
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].querySelector('.sfc-pill').setAttribute('aria-checked', states[rows[i].getAttribute('data-setting')] ? 'true' : 'false');
+    }
+  }
+  function openSettings(btn) {
+    if (!overlay) build();
+    syncPills();
+    opener = btn;
+    btn.setAttribute('aria-expanded', 'true');
+    overlay.hidden = false;
+    root.style.overflow = 'hidden';
+    overlay.querySelector('.sfc-pill').focus();
+  }
+  function closeSettings() {
+    overlay.hidden = true;
+    root.style.overflow = '';
+    if (opener) { opener.setAttribute('aria-expanded', 'false'); opener.focus(); opener = null; }
+  }
+  function toggle(name) {
+    if (name === 'dark') {
+      var t = getTheme() === 'dark' ? 'light' : 'dark';
+      memTheme = t; write(THEME_KEY, t); applyTheme(t);
+    } else if (name === 'disguise') {
+      var d = !getDisguise();
+      memDisguise = d; write(DISGUISE_KEY, d ? 'on' : 'off'); applyDisguise(d);
+    }
+    syncPills();
+  }
 
   document.addEventListener('click', function (e) {
-    var btn = e.target.closest && e.target.closest('.theme-toggle');
-    if (!btn) return;
-    chosen = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    try { localStorage.setItem(KEY, chosen); } catch (err) {}
-    apply(chosen);
+    var gear = e.target.closest && e.target.closest('.settings-btn');
+    if (gear) { openSettings(gear); return; }
+    if (!overlay || overlay.hidden) return;
+    if (e.target === overlay || e.target.closest('.sfc-close')) { closeSettings(); return; }
+    var row = e.target.closest('.sfc-row');
+    if (row) toggle(row.getAttribute('data-setting'));
   });
-  document.addEventListener('DOMContentLoaded', function () { apply(current()); });
-  window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === null) apply(current()); });
-  window.addEventListener('pageshow', function (e) { if (e.persisted) apply(current()); });
+  document.addEventListener('keydown', function (e) {
+    if (!overlay || overlay.hidden) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeSettings(); return; }
+    if (e.key === 'Tab') {
+      var f = overlay.querySelectorAll('button'), first = f[0], last = f[f.length - 1];
+      if (!overlay.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  function resync() { applyTheme(getTheme()); applyDisguise(getDisguise()); syncPills(); }
+  document.addEventListener('DOMContentLoaded', resync);
+  // Changed in another tab/window: follow it.
+  window.addEventListener('storage', function (e) { if (e.key === THEME_KEY || e.key === DISGUISE_KEY || e.key === null) resync(); });
+  // Back/forward restoring a cached page: re-check the saved settings.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) resync(); });
 })();
 </script>
 </head>
@@ -223,7 +351,7 @@ html[data-theme="dark"] footer a{color:#aab3bb}
                 <ul>
                     <li><a href="https://discord.gg/GnVUkcsfMw" target="_blank">Discord</a></li>
                     <li><a href="https://www.tiktok.com/@schoolflashcards" target="_blank">TikTok</a></li>
-                    <li><button type="button" class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" title="Toggle dark mode">🌙</button></li>
+                    <li><button type="button" class="settings-btn" aria-label="Settings" aria-haspopup="dialog" aria-expanded="false" title="Settings">⚙️</button></li>
                 </ul>
             </nav>
         </div>
